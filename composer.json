@@ -1,0 +1,81 @@
+{
+    "name": "uphptime/uphptime",
+    "description": "A decentralized, UptimeRobot-style uptime monitor.",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require": {
+        "php": ">=8.1",
+        "ext-json": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*",
+        "php-di/php-di": "^7.0",
+        "slim/psr7": "^1.6",
+        "slim/slim": "^4.12"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^2",
+        "friendsofphp/php-cs-fixer": "^3",
+        "rector/rector": "^2"
+    },
+    "suggest": {
+        "ext-pdo": "Required only when storage_backend is \"mysql\" or \"pgsql\".",
+        "ext-pdo_mysql": "Required only when storage_backend is \"mysql\".",
+        "ext-pdo_pgsql": "Required only when storage_backend is \"pgsql\"."
+    },
+    "autoload": {
+        "psr-4": {
+            "Uphptime\\": "src/Uphptime/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Uphptime\\Tests\\": "tests/Uphptime/"
+        }
+    },
+    "bin": [
+        "bin/uphptime"
+    ],
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.1"
+        }
+    },
+    "scripts": {
+        "syntax": "@php resources/scripts/syntax.php",
+        "cs:fix": "vendor/bin/php-cs-fixer fix",
+        "cs:check": "vendor/bin/php-cs-fixer fix --dry-run -vv",
+        "stan": "vendor/bin/phpstan analyse",
+        "tests": "vendor/bin/phpunit",
+        "api:docs": "@php resources/scripts/generate-openapi.php",
+        "api:docs:check": "@php resources/scripts/generate-openapi.php --check",
+        "qa": [
+            "@syntax",
+            "@cs:check",
+            "@stan",
+            "@api:docs:check",
+            "@tests"
+        ],
+        "rector:dry": "rector process -n",
+        "rector:fix": "rector process",
+        "fix": [
+            "@rector:fix",
+            "@cs:fix",
+            "@tests"
+        ]
+    },
+    "scripts-descriptions": {
+        "syntax": "Performs php syntax checks",
+        "cs:fix": "Performs code-style corrections on the whole codebase",
+        "cs:check": "Performs a code-style dry-run on the whole codebase",
+        "stan": "Performs static analysis",
+        "tests": "Executes the unit tests",
+        "api:docs": "Regenerates docs/openapi.json from Uphptime\\Api\\OpenApi\\OpenApiSpecBuilder",
+        "api:docs:check": "Verifies docs/openapi.json is current without writing (part of the qa gate)",
+        "qa": "Runs the full pre-PR quality gate (syntax, style, static analysis, openapi drift check, tests)",
+        "rector:dry": "Performs rector code-migrations dry-run",
+        "rector:fix": "Applies pending rector code-migrations",
+        "fix": "Applies rector:fix and cs:fix together, then runs tests"
+    }
+}

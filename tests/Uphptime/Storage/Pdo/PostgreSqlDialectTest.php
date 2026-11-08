@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * vim:set softtabstop=4 shiftwidth=4 expandtab:
+ *
+ * LICENSE: GNU Affero General Public License, version 3 (AGPL-3.0-or-later)
+ * Copyright Lachlan de Waard <lachlan.00@gmail.com>, 2026
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+namespace Uphptime\Tests\Storage\Pdo;
+
+use PHPUnit\Framework\TestCase;
+use Uphptime\Storage\Pdo\PostgreSqlDialect;
+
+final class PostgreSqlDialectTest extends TestCase
+{
+    public function testDecodeBoolHandlesEveryShapePostgresCanReturn(): void
+    {
+        $dialect = new PostgreSqlDialect();
+
+        self::assertTrue($dialect->decodeBool('t'));
+        self::assertFalse($dialect->decodeBool('f'));
+        self::assertTrue($dialect->decodeBool(true));
+        self::assertFalse($dialect->decodeBool(false));
+        self::assertTrue($dialect->decodeBool(1));
+        self::assertFalse($dialect->decodeBool(0));
+    }
+
+    public function testName(): void
+    {
+        self::assertSame('pgsql', (new PostgreSqlDialect())->name());
+    }
+
+    public function testUpsertSuffixUsesOnConflictWithTheExplicitConflictTarget(): void
+    {
+        $dialect = new PostgreSqlDialect();
+
+        $suffix = $dialect->upsertSuffix(['id', 'name', 'enabled'], ['id'], ['name', 'enabled']);
+
+        self::assertSame(' ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, enabled = EXCLUDED.enabled', $suffix);
+    }
+}

@@ -1,0 +1,3 @@
+# User crontab: replace the PHP, installation and log paths before installing.
+*/5 * * * * /usr/bin/php /path/to/uphptime/bin/uphptime check:run >> /path/to/uphptime.log 2>&1
+* * * * * /usr/bin/php /path/to/uphptime/bin/uphptime pinger:refresh-cache >> /path/to/uphptime-pinger.log 2>&1

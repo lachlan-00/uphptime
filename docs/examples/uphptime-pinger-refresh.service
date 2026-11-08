@@ -1,0 +1,7 @@
+[Unit]
+Description=uPHPtime pinger cache refresh
+
+[Service]
+Type=oneshot
+User=www-data
+ExecStart=/usr/bin/php /path/to/uphptime/bin/uphptime pinger:refresh-cache

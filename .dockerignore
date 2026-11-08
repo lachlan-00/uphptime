@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+vendor
+tests
+data
+config/node.json
+docker/data
+docker/local-swarm/data
+.phpunit.cache
+.php-cs-fixer.cache
+build
+*.md

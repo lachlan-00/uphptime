@@ -1,0 +1,8 @@
+.php-cs-fixer.cache
+.idea
+config/node.json
+.phpunit.cache/
+build/
+data/
+docker/with-dashboard/docker/
+vendor/

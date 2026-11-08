@@ -1,0 +1,50 @@
+name: uphptime-peer-group
+
+x-node: &node
+  build:
+    context: ./docker/uphptime
+    dockerfile: ./docker/Dockerfile
+  restart: unless-stopped
+
+services:
+  primary:
+    <<: *node
+    container_name: uphptime-peer-group-primary
+    ports:
+      - "${PRIMARY_HTTP_PORT:-48488}:${PRIMARY_HTTP_PORT:-48488}"
+    volumes:
+      - ./data/primary/config:/var/www/html/config
+      - ./data/primary/data:/var/www/html/data
+      - ./backup/primary:/var/www/html/backup
+    environment:
+      UPHPTIME_HTTP_PORT: ${PRIMARY_HTTP_PORT:-48488}
+      PUID: ${PUID-}
+      PGID: ${PGID-}
+
+  peer1:
+    <<: *node
+    container_name: uphptime-peer-group-peer1
+    ports:
+      - "${PEER1_HTTP_PORT:-48489}:${PEER1_HTTP_PORT:-48489}"
+    volumes:
+      - ./data/peer1/config:/var/www/html/config
+      - ./data/peer1/data:/var/www/html/data
+      - ./backup/peer1:/var/www/html/backup
+    environment:
+      UPHPTIME_HTTP_PORT: ${PEER1_HTTP_PORT:-48489}
+      PUID: ${PUID-}
+      PGID: ${PGID-}
+
+  peer2:
+    <<: *node
+    container_name: uphptime-peer-group-peer2
+    ports:
+      - "${PEER2_HTTP_PORT:-48490}:${PEER2_HTTP_PORT:-48490}"
+    volumes:
+      - ./data/peer2/config:/var/www/html/config
+      - ./data/peer2/data:/var/www/html/data
+      - ./backup/peer2:/var/www/html/backup
+    environment:
+      UPHPTIME_HTTP_PORT: ${PEER2_HTTP_PORT:-48490}
+      PUID: ${PUID-}
+      PGID: ${PGID-}

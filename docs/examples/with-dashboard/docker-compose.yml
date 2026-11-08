@@ -1,0 +1,36 @@
+name: uphptime-with-dashboard
+
+services:
+  primary:
+    build:
+      context: ./docker/uphptime
+      dockerfile: ./docker/Dockerfile
+    container_name: uphptime-dashboard-primary
+    restart: unless-stopped
+    ports:
+      - "${UPHPTIME_HTTP_PORT:-48488}:${UPHPTIME_HTTP_PORT:-48488}"
+      # Uncomment to serve HTTPS directly (no reverse proxy) - see "HTTPS, directly" in the main README.
+      # - "${UPHPTIME_HTTPS_PORT:-443}:${UPHPTIME_HTTPS_PORT:-443}"
+    volumes:
+      - ./data/primary/config:/var/www/html/config
+      - ./data/primary/data:/var/www/html/data
+      - ./backup/primary:/var/www/html/backup
+    environment:
+      UPHPTIME_HTTP_PORT: ${UPHPTIME_HTTP_PORT:-48488}
+      UPHPTIME_HTTPS_PORT: ${UPHPTIME_HTTPS_PORT-}
+      UPHPTIME_TLS_CERT_FILE: ${UPHPTIME_TLS_CERT_FILE-}
+      UPHPTIME_TLS_KEY_FILE: ${UPHPTIME_TLS_KEY_FILE-}
+      UPHPTIME_TLS_CHAIN_FILE: ${UPHPTIME_TLS_CHAIN_FILE-}
+      PUID: ${PUID-}
+      PGID: ${PGID-}
+
+  dashboard:
+    build:
+      context: ./docker/uphptime-dashboard
+      dockerfile: ./Dockerfile
+    container_name: uphptime-dashboard-web
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_HTTP_PORT:-48480}:80"
+    depends_on:
+      - primary

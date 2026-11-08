@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * vim:set softtabstop=4 shiftwidth=4 expandtab:
+ *
+ * LICENSE: GNU Affero General Public License, version 3 (AGPL-3.0-or-later)
+ * Copyright Lachlan de Waard <lachlan.00@gmail.com>, 2026
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+namespace Uphptime\Cli\Commands;
+
+use Uphptime\Cli\ArgvOptions;
+use Uphptime\Cli\CommandInterface;
+use Uphptime\Cli\ConsoleOutputInterface;
+use Uphptime\Peer\Peer;
+use Uphptime\Storage\PeerRepositoryInterface;
+
+/**
+ * Drops a pattern from a peer's target allowlist. Not an error if it wasn't there - unlike peer/key
+ * ids, a pattern has no identity an admin script can track precisely, so idempotent removal is more
+ * useful than a hard failure.
+ */
+final class PeersAllowlistRemoveCommand implements CommandInterface
+{
+    public function __construct(
+        private readonly PeerRepositoryInterface $peerRepository,
+        private readonly ConsoleOutputInterface $output,
+    ) {}
+
+    public function run(array $args): int
+    {
+        $options = ArgvOptions::parse($args);
+        $id      = $options['id'] ?? null;
+        $pattern = $options['pattern'] ?? null;
+
+        if ($id === null || $pattern === null) {
+            $this->output->writeErrorLine(json_encode(['error' => 'Missing required --id and --pattern options.'], JSON_THROW_ON_ERROR));
+
+            return 1;
+        }
+
+        $peer = $this->peerRepository->find($id);
+        if ($peer === null) {
+            $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $id)], JSON_THROW_ON_ERROR));
+
+            return 1;
+        }
+
+        $removed   = in_array($pattern, $peer->targetAllowlist, true);
+        $allowlist = array_values(array_filter($peer->targetAllowlist, static fn(string $existing): bool => $existing !== $pattern));
+
+        $this->peerRepository->save(new Peer(
+            id: $peer->id,
+            label: $peer->label,
+            baseUrl: $peer->baseUrl,
+            enabled: $peer->enabled,
+            allowOutboundDelegation: $peer->allowOutboundDelegation,
+            rateLimitPerMinute: $peer->rateLimitPerMinute,
+            targetAllowlist: $allowlist,
+            keys: $peer->keys,
+        ));
+
+        $this->output->writeLine(json_encode(['id' => $id, 'removed' => $removed, 'target_allowlist' => $allowlist], JSON_THROW_ON_ERROR));
+
+        return 0;
+    }
+}

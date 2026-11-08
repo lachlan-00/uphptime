@@ -1,0 +1,32 @@
+name: uphptime-test-databases
+
+# Disposable MySQL and PostgreSQL instances for the SQL integration tests - see "Tests and
+# quality checks" in CONTRIBUTING.md. Not used by the application itself; the root
+# docker-compose.yml runs the actual uPHPtime node.
+
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: uphptime
+      MYSQL_DATABASE: uphptime_test
+      MYSQL_USER: uphptime
+      MYSQL_PASSWORD: uphptime
+    ports:
+      - "3307:3306"
+    volumes:
+      - uphptime_mysql_test:/var/lib/mysql
+  pgsql:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: uphptime_test
+      POSTGRES_USER: uphptime
+      POSTGRES_PASSWORD: uphptime
+    ports:
+      - "5433:5432"
+    volumes:
+      - uphptime_pgsql_test:/var/lib/postgresql/data
+
+volumes:
+  uphptime_mysql_test:
+  uphptime_pgsql_test:

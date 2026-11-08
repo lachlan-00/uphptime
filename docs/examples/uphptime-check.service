@@ -1,0 +1,7 @@
+[Unit]
+Description=uPHPtime scheduled check pass
+
+[Service]
+Type=oneshot
+User=www-data
+ExecStart=/usr/bin/php /path/to/uphptime/bin/uphptime check:run

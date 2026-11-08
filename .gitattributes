@@ -1,0 +1,16 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+composer.lock eol=lf
+crontab eol=lf
+Dockerfile eol=lf
+*.json eol=lf
+*.neon eol=lf
+*.md eol=lf
+*.php eol=lf
+*.phtml eol=lf
+*.sh eol=lf
+*.sql eol=lf
+*.xhtml eol=lf
+*.yml eol=lf
+resources/git-hooks/* eol=lf
