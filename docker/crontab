@@ -1,5 +1,0 @@
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-*/5 * * * * www-data php /var/www/html/bin/uphptime check:run >> /proc/1/fd/1 2>> /proc/1/fd/2
-* * * * * www-data php /var/www/html/bin/uphptime pinger:refresh-cache >> /proc/1/fd/1 2>> /proc/1/fd/2
-2 1 * * * www-data php /var/www/html/bin/uphptime storage:export --dir="/var/www/html/backup/$(date -u +%Y%m%dT%H%M%SZ)" >> /proc/1/fd/1 2>> /proc/1/fd/2

@@ -4,6 +4,8 @@
 composer.lock eol=lf
 crontab eol=lf
 Dockerfile eol=lf
+*.default eol=lf
+*.example eol=lf
 *.json eol=lf
 *.neon eol=lf
 *.md eol=lf

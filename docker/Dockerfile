@@ -21,7 +21,10 @@ RUN apt-get update \
 COPY --from=vendor /app /var/www/html
 COPY docker/apache-vhost-http.conf docker/apache-vhost-http-redirect.conf docker/apache-vhost-https.conf /usr/local/share/uphptime/
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/crontab /etc/cron.d/uphptime
+# Wildcard match: always picks up docker/crontab.default, and docker/crontab too when a user has
+# created one of their own (gitignored, so a fresh clone never has it). The RUN step below prefers
+# the user's file over the default when both are present.
+COPY docker/crontab* /tmp/crontab-candidates/
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY docker/favicon.ico /var/www/html/public/favicon.ico
 
@@ -32,6 +35,12 @@ COPY docker/favicon.ico /var/www/html/public/favicon.ico
 # place), so a second start never re-substitutes into an already-substituted file.
 RUN mkdir -p /usr/local/share/uphptime \
     &&  cp /var/www/html/config/node.json.dist /usr/local/share/uphptime/node.json.dist \
+    &&  if [ -f /tmp/crontab-candidates/crontab ]; then \
+            cp /tmp/crontab-candidates/crontab /etc/cron.d/uphptime; \
+        else \
+            cp /tmp/crontab-candidates/crontab.default /etc/cron.d/uphptime; \
+        fi \
+    &&  rm -rf /tmp/crontab-candidates \
     &&  chmod 0644 /etc/cron.d/uphptime \
     &&  chmod +x /usr/local/bin/docker-entrypoint.sh \
     &&  chown -R www-data:www-data /var/www/html
