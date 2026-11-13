@@ -105,6 +105,7 @@ final class ConfigLoaderTest extends TestCase
         self::assertNotEmpty($config->tcpPortAllowlist);
         self::assertSame([], $config->egressAllowedRanges);
         self::assertSame(3, $config->maxDelegatesPerAcquisition);
+        self::assertTrue($config->localFailureCountsAsDown);
         self::assertSame(0.07, $config->canarySampleRate);
         self::assertSame(100.0, $config->peerReputationNeutralScore);
         self::assertSame(40.0, $config->peerReputationExclusionThreshold);

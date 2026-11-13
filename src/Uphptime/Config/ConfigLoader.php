@@ -61,6 +61,7 @@ final class ConfigLoader
             pingerCacheIdleEvictionSeconds: $this->intValue($data, ConfigKey::PingerCacheIdleEvictionSeconds),
             pingerCacheMaxTrackedTargets: $this->intValue($data, ConfigKey::PingerCacheMaxTrackedTargets),
             maxDelegatesPerAcquisition: $this->intValue($data, ConfigKey::MaxDelegatesPerAcquisition),
+            localFailureCountsAsDown: $this->boolValue($data, ConfigKey::LocalFailureCountsAsDown),
             canarySampleRate: $this->floatValue($data, ConfigKey::CanarySampleRate),
             peerReputationNeutralScore: $this->floatValue($data, ConfigKey::PeerReputationNeutralScore),
             peerReputationEwmaAlpha: $this->floatValue($data, ConfigKey::PeerReputationEwmaAlpha),

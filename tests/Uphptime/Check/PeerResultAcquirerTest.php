@@ -79,6 +79,37 @@ final class PeerResultAcquirerTest extends TestCase
         self::assertNull($acquirer->acquire($this->site(), [], 10.0));
     }
 
+    public function testErrorReplySettlesNothingAndTheNextPeerIsTried(): void
+    {
+        $peers = new InMemoryPeerRepository();
+        $peers->save($this->peer('a'));
+        $peers->save($this->peer('b'));
+
+        $client = FakePeerCheckClient::byPeerId([
+            'a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none'),
+            'b' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
+        ]);
+        [$acquirer, $reputations] = $this->acquirer($peers, $client);
+
+        $result = $acquirer->acquire($this->site(), [], 10.0);
+
+        self::assertNotNull($result);
+        self::assertSame(CheckOutcome::Fail, $result->result->outcome);
+        self::assertSame('b', $result->peer?->id);
+        self::assertSame(100.0, $reputations->get('a')->score, 'an error reply is a valid response, not a non-response');
+    }
+
+    public function testOnlyErrorRepliesYieldsNull(): void
+    {
+        $peers = new InMemoryPeerRepository();
+        $peers->save($this->peer('a'));
+
+        $client     = FakePeerCheckClient::byPeerId(['a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none')]);
+        [$acquirer] = $this->acquirer($peers, $client);
+
+        self::assertNull($acquirer->acquire($this->site(), [], 10.0));
+    }
+
     public function testSucceedsOnTheSecondAttemptAfterOneNonResponse(): void
     {
         $peers = new InMemoryPeerRepository();

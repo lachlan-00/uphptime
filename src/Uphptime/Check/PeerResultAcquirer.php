@@ -34,8 +34,9 @@ use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Tries up to a configured number of distinct peers for one valid result of any outcome. A
- * non-response records a bad reputation event and excludes that peer from the next attempt in this
+ * Tries up to a configured number of distinct peers (max_delegates_per_acquisition) for one
+ * conclusive Pass or Fail. An Error reply settles nothing, so it is skipped like a non-response
+ * (without a reputation penalty). A non-response records a bad reputation event and excludes that peer from the next attempt in this
  * same loop; the first valid response records a good event and is returned immediately.
  */
 final class PeerResultAcquirer
@@ -67,6 +68,13 @@ final class PeerResultAcquirer
                 $delegated = $this->peerCheckClient->requestCheck($peer, $site, $timeoutSeconds);
             } catch (DelegatedCheckFailedException) {
                 $this->recordEvent($peer->id, good: false);
+                continue;
+            }
+
+            if ($delegated->result->outcome === CheckOutcome::Error) {
+                // A valid signed reply that settles nothing (e.g. the peer's egress policy refused
+                // the target) - the peer is fine, but another peer or a self-check may do better.
+                $this->recordEvent($peer->id, good: true);
                 continue;
             }
 

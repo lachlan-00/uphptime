@@ -92,11 +92,17 @@ periods. Run `php bin/uphptime help` for all commands.
 
 New sites start as `unknown` and are immediately due for a check. `sites:list` displays
 `up`, `suspect`, `down`, or `unknown`. A stale check or an inconclusive result is shown as
-unknown; the last confirmed state is retained internally. Unconfirmed peer failures and
-local network failures without independent confirmation are excluded from uptime calculations
-rather than counted as downtime. In particular, TCP and ICMP failures without a reachable
-peer cannot independently confirm downtime. HTTP error responses and keyword mismatches can
-still count as failures.
+unknown; the last confirmed state is retained internally. When delegating, a peer that does not
+respond or returns an error is skipped and another peer is tried, up to
+`max_delegates_per_acquisition` attempts (default 3) for the check and again for confirming a
+failure. If no peer gives a conclusive answer, this node runs the check itself. A failure
+reported by a peer is confirmed by another peer or, failing that, by this node, and a local
+connection failure counts as that confirmation. A failed check on this node with no peer
+involved is counted as down unless `local_failure_counts_as_down` is `false`; then it is
+recorded as an `error` (it may be this node's own network), which leaves the site's state
+unchanged but still counts against the uptime percentage. Reports show errors as `checks_error`
+and `error_percent`. HTTP error responses and keyword mismatches count as failures. Only
+maintenance windows are excluded from uptime.
 
 Maintenance windows exclude checks during the window from uptime reporting:
 
@@ -122,6 +128,10 @@ performing the delegated check.
 - `pinger_enabled`, timeout, cache, TCP port and egress settings control delegated checks.
   Private and other restricted address ranges are blocked by default; configure
   `egress_allowed_ranges` deliberately when private targets must be reachable.
+- `max_delegates_per_acquisition` (default 3) caps how many peers are tried for one check, and
+  again for one failure confirmation, before this node checks itself.
+  `local_failure_counts_as_down` (default `true`) decides whether a connection failure seen only
+  by this node is downtime or an `error`.
 - HTTP requests identify the checking node as `uPHPtime/<version>`. Set `http_user_agent`
   to append custom text; an empty or omitted value uses only the default identification.
   Update the checking peer to change the version it reports.
@@ -147,8 +157,8 @@ docker compose logs --since=15m primary | grep pinger_http_curl_failure
 For the `with-dashboard` or `peer-group` examples, run these from that example's own
 directory instead, using `data/primary/data/history/...` (or `data/<node>/data/...` for
 `peer-group`) and the matching service name. `source: self` means a local check;
-`source: peer:...` identifies the delegated key. `unknown` and error outcomes are
-inconclusive, not confirmed downtime. A cached result can delay a fresh peer probe by up to
+`source: peer:...` identifies the delegated key. `error` outcomes do not change the
+site's state but do count against uptime. A cached result can delay a fresh peer probe by up to
 `pinger_cache_ttl_seconds`.
 
 ## Peers

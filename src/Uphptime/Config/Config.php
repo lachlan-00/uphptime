@@ -60,6 +60,7 @@ final class Config
         public readonly int $pingerCacheIdleEvictionSeconds = 3600,
         public readonly int $pingerCacheMaxTrackedTargets = 500,
         public readonly int $maxDelegatesPerAcquisition = 3,
+        public readonly bool $localFailureCountsAsDown = true,
         public readonly float $canarySampleRate = 0.07,
         public readonly float $peerReputationNeutralScore = 100.0,
         public readonly float $peerReputationEwmaAlpha = 0.2,

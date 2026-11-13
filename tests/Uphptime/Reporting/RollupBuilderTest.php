@@ -63,7 +63,7 @@ final class RollupBuilderTest extends TestCase
         self::assertSame(2, $rollup->checksPass);
         self::assertSame(1, $rollup->checksFail);
         self::assertSame(1, $rollup->checksUnknown);
-        self::assertSame(66.6667, $rollup->uptimePercent);
+        self::assertSame(50.0, $rollup->uptimePercent, 'the error outcome counts against uptime');
     }
 
     public function testClosingTwiceIsANoOp(): void

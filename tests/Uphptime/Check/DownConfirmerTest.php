@@ -52,14 +52,26 @@ use Uphptime\Tests\Support\FakeRandom;
 
 final class DownConfirmerTest extends TestCase
 {
-    public function testAcquisitionExhaustedIsUnconfirmed(): void
+    public function testAcquisitionExhaustedFallsBackToASelfCheck(): void
     {
         $peers  = $this->peers(['b', 'c', 'd']);
         $client = FakePeerCheckClient::byPeerId(['b' => null, 'c' => null, 'd' => null]);
 
         $outcome = $this->confirmer($peers, $client)->confirm($this->site(), $this->primary('a'), 10.0);
 
-        self::assertFalse($outcome->confirmed);
+        self::assertTrue($outcome->confirmed);
+        self::assertSame('self', $outcome->source);
+        self::assertSame(CheckOutcome::Pass, $outcome->result?->outcome);
+    }
+
+    public function testAcquisitionExhaustedWithAnErroringSelfCheckIsUnconfirmed(): void
+    {
+        $peers     = $this->peers(['b', 'c', 'd']);
+        $client    = FakePeerCheckClient::byPeerId(['b' => null, 'c' => null, 'd' => null]);
+        $config    = $this->config();
+        $confirmer = new DownConfirmer($this->selector($peers, new InMemoryPeerReputationRepository()), $client, new InMemoryPeerReputationRepository(), new PeerReputationScorer($config), new FakeClock(), $config, $this->attestationVerifier(), ['http' => new FakeChecker([CheckResult::error('self check unavailable')])], $config->maxDelegatesPerAcquisition);
+
+        self::assertFalse($confirmer->confirm($this->site(), $this->primary('a'), 10.0)->confirmed);
     }
 
     public function testConfirmingErrorDoesNotSettleAndTryingContinuesToAPassOrFail(): void
@@ -114,7 +126,7 @@ final class DownConfirmerTest extends TestCase
         self::assertSame(CheckOutcome::Pass, $outcome->result?->outcome);
     }
 
-    public function testSelfNetworkFailureDoesNotConfirmPeerFailure(): void
+    public function testSelfNetworkFailureConfirmsPeerFailure(): void
     {
         $peers       = $this->peers([]);
         $config      = $this->config();
@@ -131,7 +143,11 @@ final class DownConfirmerTest extends TestCase
             3,
         );
 
-        self::assertFalse($confirmer->confirm($this->site(), $this->primary('a'), 10.0)->confirmed);
+        $outcome = $confirmer->confirm($this->site(), $this->primary('a'), 10.0);
+
+        self::assertTrue($outcome->confirmed, 'a peer already failed from its own vantage point, so a local connect failure corroborates it');
+        self::assertSame(CheckOutcome::Fail, $outcome->result?->outcome);
+        self::assertSame('self', $outcome->source);
     }
 
     public function testTwoDifferentPeersAgreeingOnFailResolvesFail(): void

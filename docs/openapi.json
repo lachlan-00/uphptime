@@ -700,16 +700,29 @@
                         "type": "integer"
                     },
                     "checks_unknown": {
-                        "type": "integer"
+                        "type": "integer",
+                        "deprecated": true,
+                        "description": "Alias of checks_error."
+                    },
+                    "checks_error": {
+                        "type": "integer",
+                        "description": "Checks that ended in an error outcome. These count against uptime_percent."
                     },
                     "checks_excluded_maintenance": {
                         "type": "integer"
                     },
                     "uptime_percent": {
                         "type": "number",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing."
                     },
                     "unknown_percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "deprecated": true,
+                        "description": "Alias of error_percent."
+                    },
+                    "error_percent": {
                         "type": "number",
                         "nullable": true
                     },
@@ -736,16 +749,29 @@
                         "type": "integer"
                     },
                     "checks_unknown": {
-                        "type": "integer"
+                        "type": "integer",
+                        "deprecated": true,
+                        "description": "Alias of checks_error."
+                    },
+                    "checks_error": {
+                        "type": "integer",
+                        "description": "Checks that ended in an error outcome. These count against uptime_percent."
                     },
                     "checks_excluded_maintenance": {
                         "type": "integer"
                     },
                     "uptime_percent": {
                         "type": "number",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing."
                     },
                     "unknown_percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "deprecated": true,
+                        "description": "Alias of error_percent."
+                    },
+                    "error_percent": {
                         "type": "number",
                         "nullable": true
                     },

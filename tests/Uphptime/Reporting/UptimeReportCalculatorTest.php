@@ -53,6 +53,21 @@ final class UptimeReportCalculatorTest extends TestCase
         self::assertSame(0.0, $calculator->forDay('site-1', '2026-01-02')->uptimePercent());
     }
 
+    public function testErrorOutcomesCountAgainstUptimeButMaintenanceDoesNot(): void
+    {
+        $history = new InMemoryHistoryRepository();
+        $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Pass));
+        $history->append('site-1', $this->record('2026-01-02T00:05:00+00:00', CheckOutcome::Error));
+
+        $calculator = new UptimeReportCalculator($history, new InMemoryRollupRepository(), new FakeClock('2026-01-02T12:00:00+00:00'));
+        $report     = $calculator->forDay('site-1', '2026-01-02');
+
+        self::assertSame(2, $report->checksTotal);
+        self::assertSame(1, $report->toArray()['checks_error']);
+        self::assertSame(50.0, $report->uptimePercent());
+        self::assertSame(50.0, $report->toArray()['error_percent']);
+    }
+
     public function testNoDataYetReturnsNullPercentagesNotADivisionError(): void
     {
         $calculator = new UptimeReportCalculator(new InMemoryHistoryRepository(), new InMemoryRollupRepository(), new FakeClock());

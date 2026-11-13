@@ -131,6 +131,13 @@ final class CheckRunner
             return;
         }
 
+        $this->checkLocally($site, $checkedAt);
+    }
+
+    // A check run by this node itself: the whole path with no usable peer, and the last resort when
+    // peers were tried but none returned a conclusive result.
+    private function checkLocally(Site $site, DateTimeImmutable $checkedAt): void
+    {
         $checker = $this->checkers[$site->checkType->value];
 
         try {
@@ -139,7 +146,9 @@ final class CheckRunner
             $result = CheckResult::error($exception->getMessage());
         }
 
-        if ($result->isUnverifiedNetworkFailure()) {
+        // With local_failure_counts_as_down disabled, a connection-level failure with nobody to
+        // corroborate it is recorded as an error rather than downtime (it may be this node's network).
+        if (!$this->config->localFailureCountsAsDown && $result->isUnverifiedNetworkFailure()) {
             $result = $result->asUnverifiedError();
         }
 
@@ -150,20 +159,16 @@ final class CheckRunner
     {
         $acquired = $this->peerResultAcquirer?->acquire($site, [], (float) $this->config->peerRequestTimeoutSeconds);
 
-        if ($acquired === null) {
-            $this->recordNoValidResult($site, $checkedAt, 'peer:unknown');
+        if ($acquired === null || $acquired->result->outcome === CheckOutcome::Error) {
+            // No peer produced a conclusive result within max_delegates_per_acquisition attempts:
+            // fall back to checking from this node rather than recording an unmeasured cycle.
+            $this->checkLocally($site, $checkedAt);
 
             return;
         }
 
         if ($acquired->result->outcome === CheckOutcome::Fail) {
             $this->resolveFail($site, $acquired, $checkedAt);
-
-            return;
-        }
-
-        if ($acquired->result->outcome === CheckOutcome::Error) {
-            $this->applyResult($site, $acquired->result, $checkedAt, $acquired->source(), $acquired->evidence, $acquired->attestation, peer: $acquired->peer);
 
             return;
         }
@@ -224,11 +229,6 @@ final class CheckRunner
         ));
 
         $this->siteRepository->save($site->withState($newState));
-    }
-
-    private function recordNoValidResult(Site $site, DateTimeImmutable $checkedAt, string $source): void
-    {
-        $this->applyResult($site, CheckResult::error('delegated_check_failed'), $checkedAt, $source, null, 'none');
     }
 
     /** @param array<string, mixed>|null $evidence */

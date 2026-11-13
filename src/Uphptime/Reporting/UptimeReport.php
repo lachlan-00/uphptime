@@ -26,7 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Reporting;
 
 /**
- * An aggregated uptime figure; states how much of the period is unknown/self-sourced, never just a number.
+ * An aggregated uptime figure; states how much of the period errored/self-sourced, never just a number.
+ * `checksUnknown` counts error outcomes; the `unknown_*` API keys are kept as aliases of `checks_error`/`error_percent`.
  */
 final class UptimeReport
 {
@@ -65,9 +66,11 @@ final class UptimeReport
         return [
             'checks_total' => $this->checksTotal,
             'checks_pass' => $this->checksPass,
+            'checks_error' => $this->checksUnknown,
             'checks_unknown' => $this->checksUnknown,
             'checks_excluded_maintenance' => $this->checksExcludedMaintenance,
             'uptime_percent' => $this->uptimePercent(),
+            'error_percent' => $this->unknownPercent(),
             'unknown_percent' => $this->unknownPercent(),
             'self_sourced_percent' => $this->selfSourcedPercent(),
         ];
@@ -78,10 +81,12 @@ final class UptimeReport
         return $this->checksTotal > 0 ? round(($this->checksUnknown / $this->checksTotal) * 100, 4) : null;
     }
 
-    // Percentage of countable checks (excludes unknown/maintenance) that passed; null when nothing counts.
+    // Percentage of countable checks (everything except maintenance) that passed; null when nothing
+    // counts. Error outcomes (checksUnknown, also exposed as checks_error) are countable and count
+    // against uptime, the same as a failed check.
     public function uptimePercent(): ?float
     {
-        $denominator = $this->checksTotal - $this->checksUnknown - $this->checksExcludedMaintenance;
+        $denominator = $this->checksTotal - $this->checksExcludedMaintenance;
 
         return $denominator > 0 ? round(($this->checksPass / $denominator) * 100, 4) : null;
     }

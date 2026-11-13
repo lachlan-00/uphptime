@@ -384,7 +384,7 @@ final class CheckRunnerTest extends TestCase
         );
     }
 
-    public function testPeerFailureWithUnreachableSelfConfirmationRemainsUnknown(): void
+    public function testPeerFailureCorroboratedByAnUnreachableSelfCheckIsDown(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
@@ -397,9 +397,13 @@ final class CheckRunnerTest extends TestCase
         $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::fail('Network is unreachable')]), $this->config(), $peers, $peerClient)->run();
 
         $records = $history->readDay('a', '2026-01-01');
-        self::assertCount(1, $records);
-        self::assertSame(CheckOutcome::Error, $records[0]->outcome);
-        self::assertSame(SiteState::Unknown, $sites->find('a')->state->effectiveStatus($clock->now(), 900));
+        self::assertCount(2, $records);
+        self::assertSame(HistoryRecordRole::Primary, $records[0]->role);
+        self::assertSame(CheckOutcome::Fail, $records[0]->outcome);
+        self::assertSame(HistoryRecordRole::Confirmation, $records[1]->role);
+        self::assertSame('self', $records[1]->source);
+        self::assertSame(CheckOutcome::Fail, $records[1]->outcome, 'two independent vantage points both failed to connect');
+        self::assertSame(SiteState::Suspect, $sites->find('a')->state->status);
     }
 
     public function testPeerSourcedPassIsRecordedWithSourceKeyIdThroughTheUnmodifiedStateMachine(): void
@@ -445,7 +449,7 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(CheckOutcome::Error, $history->readDay('a', '2026-01-01')[0]->outcome);
         $report = (new UptimeReportCalculator($history, new InMemoryRollupRepository(), $clock))->overall('a');
         self::assertSame(1, $report->checksUnknown);
-        self::assertNull($report->uptimePercent());
+        self::assertSame(0.0, $report->uptimePercent(), 'an error counts against uptime');
 
         $clock->advance('+5 minutes');
         $runner->run();
@@ -453,7 +457,7 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(CheckOutcome::Pass, $history->readDay('a', '2026-01-01')[1]->outcome);
         $report = (new UptimeReportCalculator($history, new InMemoryRollupRepository(), $clock))->overall('a');
         self::assertSame(1, $report->checksUnknown);
-        self::assertSame(100.0, $report->uptimePercent());
+        self::assertSame(50.0, $report->uptimePercent(), 'the earlier error still counts against uptime after recovery');
 
         $rollups = new InMemoryRollupRepository();
         $clock->advance('+1 day');
@@ -462,7 +466,7 @@ final class CheckRunnerTest extends TestCase
         self::assertNotNull($rollup);
         self::assertSame(1, $rollup->checksUnknown);
         self::assertSame(0, $rollup->checksFail);
-        self::assertSame(100.0, $rollup->uptimePercent);
+        self::assertSame(50.0, $rollup->uptimePercent);
     }
 
     public function testThreePeerCapAppliesIndependentlyToConfirmationAcquisition(): void
@@ -483,7 +487,7 @@ final class CheckRunnerTest extends TestCase
             'peer-d' => null,
         ]);
 
-        $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
+        $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::error('self check unavailable')]), $this->config(), $peers, $peerClient)->run();
 
         $site = $sites->find('a');
         self::assertNotNull($site);
@@ -499,10 +503,10 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(SiteState::Up, $records[0]->stateAfter);
         $report = (new UptimeReportCalculator($history, new InMemoryRollupRepository(), $clock))->overall('a');
         self::assertSame(1, $report->checksUnknown);
-        self::assertNull($report->uptimePercent());
+        self::assertSame(0.0, $report->uptimePercent());
     }
 
-    public function testUnresponsivePeerLeavesStateAndCounterUnchangedButWritesAnErrorHistoryLine(): void
+    public function testUnresponsivePeerFallsBackToASelfCheck(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
@@ -510,19 +514,77 @@ final class CheckRunnerTest extends TestCase
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
-        $peerClient = FakePeerCheckClient::failing();
 
-        $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
+        $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::pass(200, 5)]), $this->config(), $peers, FakePeerCheckClient::failing())->run();
 
-        $site = $sites->find('a');
-        self::assertNotNull($site);
-        self::assertSame(SiteState::Unknown, $site->state->status, 'an unresponsive peer must never mutate the state machine');
-        self::assertSame(0, $site->state->consecutiveFails);
+        $records = $history->readDay('a', '2026-01-01');
+        self::assertCount(1, $records);
+        self::assertSame(CheckOutcome::Pass, $records[0]->outcome);
+        self::assertSame('self', $records[0]->source);
+        self::assertSame(SiteState::Up, $sites->find('a')->state->status);
+    }
+
+    public function testUnresponsivePeerThenFailingSelfCheckRecordsFailureWhenLocalFailureCountsAsDown(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+        $history = new InMemoryHistoryRepository();
+        $peers   = new InMemoryPeerRepository();
+        $peers->save($this->peer('peer-a'));
+
+        $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::fail('Connection timed out')]), $this->config(localFailureCountsAsDown: true), $peers, FakePeerCheckClient::failing())->run();
+
+        $records = $history->readDay('a', '2026-01-01');
+        self::assertCount(1, $records);
+        self::assertSame(CheckOutcome::Fail, $records[0]->outcome);
+        self::assertSame('self', $records[0]->source);
+        self::assertSame(SiteState::Suspect, $sites->find('a')->state->status);
+        $report = (new UptimeReportCalculator($history, new InMemoryRollupRepository(), $clock))->overall('a');
+        self::assertSame(0, $report->checksUnknown);
+        self::assertSame(0.0, $report->uptimePercent());
+    }
+
+    public function testUnresponsivePeerThenFailingSelfCheckStaysAnErrorWhenLocalFailureCountsAsDownIsOff(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+        $history = new InMemoryHistoryRepository();
+        $peers   = new InMemoryPeerRepository();
+        $peers->save($this->peer('peer-a'));
+
+        $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::fail('Connection timed out')]), $this->config(), $peers, FakePeerCheckClient::failing())->run();
 
         $records = $history->readDay('a', '2026-01-01');
         self::assertCount(1, $records);
         self::assertSame(CheckOutcome::Error, $records[0]->outcome);
-        self::assertStringStartsWith('peer:', $records[0]->source);
+        self::assertSame(SiteState::Up, $sites->find('a')->state->status, 'an unverified error never mutates the state machine');
+        $report = (new UptimeReportCalculator($history, new InMemoryRollupRepository(), $clock))->overall('a');
+        self::assertSame(1, $report->checksUnknown);
+        self::assertSame(0.0, $report->uptimePercent(), 'the error still counts against uptime');
+    }
+
+    public function testPeerErrorReplyTriesTheNextPeerBeforeFallingBack(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $history = new InMemoryHistoryRepository();
+        $peers   = new InMemoryPeerRepository();
+        $peers->save($this->peer('peer-a'));
+        $peers->save($this->peer('peer-b'));
+        $peerClient = FakePeerCheckClient::byPeerId([
+            'peer-a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none'),
+            'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 5), 'k1', null, 'none'),
+        ]);
+
+        $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
+
+        $records = $history->readDay('a', '2026-01-01');
+        self::assertCount(1, $records);
+        self::assertSame(CheckOutcome::Pass, $records[0]->outcome);
+        self::assertSame('peer-b', $records[0]->peerId);
     }
 
     public function testZeroEnabledPeersBehavesIdenticallyToTheSelfCheckPath(): void
@@ -613,9 +675,9 @@ final class CheckRunnerTest extends TestCase
         );
     }
 
-    private function config(int $intervalSeconds = 300, int $runBudgetSeconds = 240): Config
+    private function config(int $intervalSeconds = 300, int $runBudgetSeconds = 240, bool $localFailureCountsAsDown = false): Config
     {
-        return new Config('data', $intervalSeconds, 90, 10, $runBudgetSeconds, 900, 'uphptime-test', 'UTC');
+        return new Config('data', $intervalSeconds, 90, 10, $runBudgetSeconds, 900, 'uphptime-test', 'UTC', localFailureCountsAsDown: $localFailureCountsAsDown);
     }
 
     private function peer(string $id): Peer

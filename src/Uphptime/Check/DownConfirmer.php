@@ -36,8 +36,9 @@ use Uphptime\Support\ClockInterface;
 
 /**
  * Confirms a primary Fail via a genuinely different peer before anything reaches the state machine.
- * With no different peer available, a self-check stands in as the confirmer (the same vantage-point
- * trade-off milestone 1's zero-peer fallback already makes). An Error confirming reply settles
+ * With no different peer available, or none that returns a conclusive answer within the attempt
+ * cap, a self-check stands in as the confirmer (the same vantage-point trade-off milestone 1's
+ * zero-peer fallback already makes). An Error confirming reply settles
  * nothing, so it is treated like a non-response: keep trying another peer.
  */
 final class DownConfirmer
@@ -58,12 +59,7 @@ final class DownConfirmer
     public function confirm(Site $site, AcquiredPeerResult $primary, float $timeoutSeconds): ConfirmationOutcome
     {
         if ($this->peerSelector->pick([(string) $primary->peer?->id]) === null) {
-            $result = $this->selfCheck($site);
-            if ($result->outcome === CheckOutcome::Error || $result->isUnverifiedNetworkFailure()) {
-                return ConfirmationOutcome::unconfirmed();
-            }
-
-            return ConfirmationOutcome::resolved($result, 'self', null, 'none');
+            return $this->confirmBySelfCheck($site);
         }
 
         $excluded = [(string) $primary->peer?->id];
@@ -111,7 +107,21 @@ final class DownConfirmer
             return ConfirmationOutcome::resolved($delegated->result, 'peer:' . $delegated->verifiedKeyId, $delegated->evidence, $verdict->attestation, $peer);
         }
 
-        return ConfirmationOutcome::unconfirmed();
+        // No other peer could settle it (every attempt failed or errored): this node checks too.
+        return $this->confirmBySelfCheck($site);
+    }
+
+    // The primary peer already reported a failure from its own vantage point, so a local check that
+    // cannot connect is independent corroboration - not an unverifiable local network problem.
+    // Only a local Error (nothing could be measured) leaves the failure unconfirmed.
+    private function confirmBySelfCheck(Site $site): ConfirmationOutcome
+    {
+        $result = $this->selfCheck($site);
+        if ($result->outcome === CheckOutcome::Error) {
+            return ConfirmationOutcome::unconfirmed();
+        }
+
+        return ConfirmationOutcome::resolved($result, 'self', null, 'none');
     }
 
     private function recordDisagreement(string $peerId): void

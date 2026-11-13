@@ -101,7 +101,8 @@ final class RollupBuilder
             $lastCheckAt = $record->ts;
         }
 
-        $denominator   = count($records) - $unknown - $excluded;
+        // Error outcomes (stored as checks_unknown) count against uptime; only maintenance is excluded.
+        $denominator   = count($records) - $excluded;
         $uptimePercent = $denominator > 0 ? round(($pass / $denominator) * 100, 4) : null;
 
         return new DailyRollup(

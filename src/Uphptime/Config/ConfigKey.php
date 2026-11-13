@@ -38,6 +38,7 @@ enum ConfigKey: string
     case DefaultPeerRateLimitPerMinute               = 'default_peer_rate_limit_per_minute';
     case EgressAllowedRanges                         = 'egress_allowed_ranges';
     case HttpUserAgent                               = 'http_user_agent';
+    case LocalFailureCountsAsDown                    = 'local_failure_counts_as_down';
     case MaxDelegatesPerAcquisition                  = 'max_delegates_per_acquisition';
     case MaxRedirects                                = 'max_redirects';
     case PeerReputationConfirmationDisagreementAlpha = 'peer_reputation_confirmation_disagreement_alpha';
@@ -97,7 +98,7 @@ enum ConfigKey: string
             self::StaleAfterSeconds => 900,
             self::HttpUserAgent => '',
             self::Timezone => 'UTC',
-            self::PingerEnabled, self::PingerCacheEnabled => true,
+            self::PingerEnabled, self::PingerCacheEnabled, self::LocalFailureCountsAsDown => true,
             self::ClockSkewSeconds, self::DefaultPeerRateLimitPerMinute, self::PingerCacheTtlSeconds => 60,
             self::PingerMaxTimeoutSeconds => 15,
             self::MaxRedirects => 0,
@@ -133,7 +134,8 @@ enum ConfigKey: string
     {
         return match ($this) {
             self::PingerEnabled,
-            self::PingerCacheEnabled => true,
+            self::PingerCacheEnabled,
+            self::LocalFailureCountsAsDown => true,
             default => false,
         };
     }
