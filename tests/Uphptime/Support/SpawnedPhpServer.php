@@ -93,6 +93,12 @@ final class SpawnedPhpServer
         }
 
         proc_close($this->process);
+
+        // The OS can take a moment to tear down the listening socket after the process is confirmed
+        // dead (observed on Windows); a caller relying on the port now refusing connections - such as
+        // a test that stops the server and immediately expects the next request to fail - would
+        // otherwise race a still-open backlog.
+        $this->waitUntilStopped();
     }
 
     private function waitUntilReady(): void
@@ -111,5 +117,22 @@ final class SpawnedPhpServer
         }
 
         throw new RuntimeException(sprintf('PHP built-in server on port %d never became ready.', $this->port));
+    }
+
+    private function waitUntilStopped(): void
+    {
+        $deadline = microtime(true) + 5.0;
+
+        while (microtime(true) < $deadline) {
+            $socket = @fsockopen('127.0.0.1', $this->port, $errorNumber, $errorMessage, 0.2);
+            if ($socket === false) {
+                return;
+            }
+
+            fclose($socket);
+            usleep(50_000);
+        }
+
+        throw new RuntimeException(sprintf('PHP built-in server on port %d never stopped accepting connections.', $this->port));
     }
 }

@@ -26,14 +26,16 @@ declare(strict_types=1);
 namespace Uphptime\Reporting;
 
 /**
- * An aggregated uptime figure; states how much of the period errored/self-sourced, never just a number.
+ * An aggregated uptime figure; states how much of the period errored/failed/self-sourced, never just a number.
  * `checksUnknown` counts error outcomes; the `unknown_*` API keys are kept as aliases of `checks_error`/`error_percent`.
+ * `checksFail` counts target-side failure outcomes, distinct from `checksUnknown` (our own check machinery erroring).
  */
 final class UptimeReport
 {
     public function __construct(
         public readonly int $checksTotal,
         public readonly int $checksPass,
+        public readonly int $checksFail,
         public readonly int $checksUnknown,
         public readonly int $checksExcludedMaintenance,
         public readonly int $checksSelfSourced,
@@ -41,7 +43,7 @@ final class UptimeReport
 
     public static function empty(): self
     {
-        return new self(0, 0, 0, 0, 0);
+        return new self(0, 0, 0, 0, 0, 0);
     }
 
     public function merge(self $other): self
@@ -49,6 +51,7 @@ final class UptimeReport
         return new self(
             $this->checksTotal + $other->checksTotal,
             $this->checksPass + $other->checksPass,
+            $this->checksFail + $other->checksFail,
             $this->checksUnknown + $other->checksUnknown,
             $this->checksExcludedMaintenance + $other->checksExcludedMaintenance,
             $this->checksSelfSourced + $other->checksSelfSourced,
@@ -66,6 +69,7 @@ final class UptimeReport
         return [
             'checks_total' => $this->checksTotal,
             'checks_pass' => $this->checksPass,
+            'checks_fail' => $this->checksFail,
             'checks_error' => $this->checksUnknown,
             'checks_unknown' => $this->checksUnknown,
             'checks_excluded_maintenance' => $this->checksExcludedMaintenance,

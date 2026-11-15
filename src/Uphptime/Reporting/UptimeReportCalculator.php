@@ -95,6 +95,7 @@ final class UptimeReportCalculator
     private function fromRecords(array $records): UptimeReport
     {
         $pass        = 0;
+        $fail        = 0;
         $unknown     = 0;
         $excluded    = 0;
         $selfSourced = 0;
@@ -110,6 +111,8 @@ final class UptimeReportCalculator
                 $pass++;
             } elseif ($record->outcome === CheckOutcome::Error) {
                 $unknown++;
+            } elseif ($record->outcome === CheckOutcome::Fail) {
+                $fail++;
             }
 
             if ($record->source === 'self') {
@@ -117,7 +120,7 @@ final class UptimeReportCalculator
             }
         }
 
-        return new UptimeReport(count($records), $pass, $unknown, $excluded, $selfSourced);
+        return new UptimeReport(count($records), $pass, $fail, $unknown, $excluded, $selfSourced);
     }
 
     /** @param DailyRollup[] $rollups */
@@ -125,6 +128,7 @@ final class UptimeReportCalculator
     {
         $total       = 0;
         $pass        = 0;
+        $fail        = 0;
         $unknown     = 0;
         $excluded    = 0;
         $selfSourced = 0;
@@ -132,11 +136,12 @@ final class UptimeReportCalculator
         foreach ($rollups as $rollup) {
             $total += $rollup->checksTotal;
             $pass += $rollup->checksPass;
+            $fail += $rollup->checksFail;
             $unknown += $rollup->checksUnknown;
             $excluded += $rollup->checksExcludedMaintenance;
             $selfSourced += $rollup->checksSelfSourced;
         }
 
-        return new UptimeReport($total, $pass, $unknown, $excluded, $selfSourced);
+        return new UptimeReport($total, $pass, $fail, $unknown, $excluded, $selfSourced);
     }
 }

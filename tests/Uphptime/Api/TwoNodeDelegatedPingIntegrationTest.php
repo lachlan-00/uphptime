@@ -85,7 +85,12 @@ final class TwoNodeDelegatedPingIntegrationTest extends TestCase
         self::assertSame(SiteState::Up, $updated->state->status);
     }
 
-    public function testPingerDownProducesNoValidResultAndLeavesSiteStateUnchanged(): void
+    // Since the "patch downtime a bit better" change, an unresponsive peer is no longer the final
+    // word: the owner falls back to checking the site itself rather than recording an unmeasured
+    // cycle (see CheckRunner::checkOneViaPeer). The monitored site is still genuinely up here, so
+    // that self-check succeeds and the state machine moves on the result, same as CheckRunnerTest's
+    // testUnresponsivePeerFallsBackToASelfCheck covers at the unit level.
+    public function testPingerDownFallsBackToASelfCheckAgainstTheStillUpSite(): void
     {
         $container         = $this->harness->ownerContainer();
         $siteRepository    = $container->get(SiteRepositoryInterface::class);
@@ -99,13 +104,51 @@ final class TwoNodeDelegatedPingIntegrationTest extends TestCase
 
         $records = $historyRepository->readDay('site-1', $clock->now()->format('Y-m-d'));
         self::assertCount(1, $records);
-        self::assertSame(CheckOutcome::Error, $records[0]->outcome);
-        self::assertStringStartsWith('peer:', $records[0]->source);
+        self::assertSame(CheckOutcome::Pass, $records[0]->outcome);
+        self::assertSame('self', $records[0]->source);
 
         $updated = $siteRepository->find('site-1');
         self::assertNotNull($updated);
-        self::assertSame(SiteState::Unknown, $updated->state->status, 'a peer that never responds must never mutate the state machine');
+        self::assertSame(SiteState::Up, $updated->state->status);
         self::assertSame(0, $updated->state->consecutiveFails);
+    }
+
+    // With the monitored site also unreachable, the self-check fallback fails too; with the default
+    // local_failure_counts_as_down = true this is a genuine, state-mutating failure rather than an
+    // unverified error (CheckRunnerTest::testUnresponsivePeerThenFailingSelfCheckRecordsFailureWhenLocalFailureCountsAsDown).
+    // A test-local site server is used (rather than the shared static one) so this test can stop it
+    // without affecting any other test's ordering.
+    public function testPingerAndSiteBothDownRecordsAFailureViaTheSelfCheckFallback(): void
+    {
+        $docRoot = sys_get_temp_dir() . '/uphptime-monitored-site-' . bin2hex(random_bytes(4));
+        mkdir($docRoot, 0775, true);
+        file_put_contents($docRoot . '/index.php', "<?php echo 'monitored-site-ok';");
+        $siteServer = new SpawnedPhpServer($docRoot);
+
+        try {
+            $container         = $this->harness->ownerContainer();
+            $siteRepository    = $container->get(SiteRepositoryInterface::class);
+            $historyRepository = $container->get(HistoryRepositoryInterface::class);
+            $clock             = $container->get(ClockInterface::class);
+
+            $siteRepository->save($this->monitoredSite($clock->now(), $siteServer));
+            $this->harness->stopPinger();
+            $siteServer->stop();
+
+            $container->get(CheckRunner::class)->run();
+
+            $records = $historyRepository->readDay('site-1', $clock->now()->format('Y-m-d'));
+            self::assertCount(1, $records);
+            self::assertSame(CheckOutcome::Fail, $records[0]->outcome);
+            self::assertSame('self', $records[0]->source);
+
+            $updated = $siteRepository->find('site-1');
+            self::assertNotNull($updated);
+            self::assertSame(SiteState::Suspect, $updated->state->status);
+            self::assertSame(1, $updated->state->consecutiveFails);
+        } finally {
+            $siteServer->stop();
+        }
     }
 
     protected function setUp(): void
@@ -119,12 +162,12 @@ final class TwoNodeDelegatedPingIntegrationTest extends TestCase
         $this->harness->cleanup();
     }
 
-    private function monitoredSite(DateTimeImmutable $now): Site
+    private function monitoredSite(DateTimeImmutable $now, ?SpawnedPhpServer $siteServer = null): Site
     {
         return new Site(
             'site-1',
             'Monitored site',
-            self::$siteServer->baseUrl() . '/',
+            ($siteServer ?? self::$siteServer)->baseUrl() . '/',
             null,
             null,
             CheckType::Http,

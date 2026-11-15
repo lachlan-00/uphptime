@@ -388,7 +388,7 @@ final class OpenApiSpecBuilder
                 'description' => 'One site\'s identity plus its uptime figures for the requested period.',
                 'required' => [
                     'id', 'name', 'groups', 'state', 'enabled',
-                    'checks_total', 'checks_pass', 'checks_unknown', 'checks_excluded_maintenance',
+                    'checks_total', 'checks_pass', 'checks_fail', 'checks_unknown', 'checks_excluded_maintenance',
                 ],
                 'properties' => [
                     'id' => ['type' => 'string'],
@@ -398,8 +398,9 @@ final class OpenApiSpecBuilder
                     'enabled' => ['type' => 'boolean'],
                     'checks_total' => ['type' => 'integer'],
                     'checks_pass' => ['type' => 'integer'],
+                    'checks_fail' => ['type' => 'integer', 'description' => 'Checks that ended in a target-side failure outcome. These count against uptime_percent.'],
                     'checks_unknown' => ['type' => 'integer', 'deprecated' => true, 'description' => 'Alias of checks_error.'],
-                    'checks_error' => ['type' => 'integer', 'description' => 'Checks that ended in an error outcome. These count against uptime_percent.'],
+                    'checks_error' => ['type' => 'integer', 'description' => 'Checks that ended in an error outcome (our own check machinery, not the target). These count against uptime_percent.'],
                     'checks_excluded_maintenance' => ['type' => 'integer'],
                     'uptime_percent' => ['type' => 'number', 'nullable' => true, 'description' => 'checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing.'],
                     'unknown_percent' => ['type' => 'number', 'nullable' => true, 'deprecated' => true, 'description' => 'Alias of error_percent.'],
@@ -410,12 +411,13 @@ final class OpenApiSpecBuilder
             'UptimeFigures' => [
                 'type' => 'object',
                 'description' => 'Every per-site field above except identity/state, merged across every item.',
-                'required' => ['checks_total', 'checks_pass', 'checks_unknown', 'checks_excluded_maintenance'],
+                'required' => ['checks_total', 'checks_pass', 'checks_fail', 'checks_unknown', 'checks_excluded_maintenance'],
                 'properties' => [
                     'checks_total' => ['type' => 'integer'],
                     'checks_pass' => ['type' => 'integer'],
+                    'checks_fail' => ['type' => 'integer', 'description' => 'Checks that ended in a target-side failure outcome. These count against uptime_percent.'],
                     'checks_unknown' => ['type' => 'integer', 'deprecated' => true, 'description' => 'Alias of checks_error.'],
-                    'checks_error' => ['type' => 'integer', 'description' => 'Checks that ended in an error outcome. These count against uptime_percent.'],
+                    'checks_error' => ['type' => 'integer', 'description' => 'Checks that ended in an error outcome (our own check machinery, not the target). These count against uptime_percent.'],
                     'checks_excluded_maintenance' => ['type' => 'integer'],
                     'uptime_percent' => ['type' => 'number', 'nullable' => true, 'description' => 'checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing.'],
                     'unknown_percent' => ['type' => 'number', 'nullable' => true, 'deprecated' => true, 'description' => 'Alias of error_percent.'],
