@@ -30,6 +30,7 @@ use Uphptime\Cli\Commands\SitesAddCommand;
 use Uphptime\Cli\Commands\SitesListCommand;
 use Uphptime\Config\Config;
 use Uphptime\Tests\Cli\FakeConsoleOutput;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemorySiteRepository;
 use Uphptime\Tests\Support\FakeClock;
 
@@ -44,7 +45,7 @@ final class SitesListCommandTest extends TestCase
         $config = new Config('data', 300, 90, 10, 240, 900, 'uphptime-test', 'UTC');
         $output = new FakeConsoleOutput();
 
-        $exitCode = (new SitesListCommand($sites, $clock, $config, $output))->run([]);
+        $exitCode = (new SitesListCommand($sites, new InMemoryMaintenanceScheduleRepository(), $clock, $config, $output))->run([]);
 
         self::assertSame(0, $exitCode);
         $decoded = $output->lastLineDecoded();

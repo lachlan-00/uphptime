@@ -31,10 +31,12 @@ use Uphptime\Cli\ConsoleOutputInterface;
 use Uphptime\Config\Config;
 use Uphptime\Storage\HistoryRepositoryInterface;
 use Uphptime\Storage\JsonHistoryRepository;
+use Uphptime\Storage\JsonMaintenanceScheduleRepository;
 use Uphptime\Storage\JsonPeerRepository;
 use Uphptime\Storage\JsonPeerReputationRepository;
 use Uphptime\Storage\JsonRollupRepository;
 use Uphptime\Storage\JsonSiteRepository;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\PeerRepositoryInterface;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Storage\Portability\StorageCopier;
@@ -56,6 +58,7 @@ final class StorageImportCommand implements CommandInterface
         private readonly PeerReputationRepositoryInterface $peerReputations,
         private readonly HistoryRepositoryInterface $history,
         private readonly RollupRepositoryInterface $rollups,
+        private readonly MaintenanceScheduleRepositoryInterface $maintenanceSchedules,
         private readonly AtomicWriter $writer,
         private readonly Config $config,
         private readonly StorageCopier $copier,
@@ -74,7 +77,7 @@ final class StorageImportCommand implements CommandInterface
             return 1;
         }
 
-        $destination = new StorageRepositorySet($this->sites, $this->peers, $this->peerReputations, $this->history, $this->rollups);
+        $destination = new StorageRepositorySet($this->sites, $this->peers, $this->peerReputations, $this->history, $this->rollups, $this->maintenanceSchedules);
 
         if (!isset($options['force']) && !$destination->isEmpty()) {
             $this->output->writeErrorLine(json_encode([
@@ -98,6 +101,7 @@ final class StorageImportCommand implements CommandInterface
             'peer_reputations' => $summary->peerReputations,
             'history_records' => $summary->historyRecords,
             'rollups' => $summary->rollups,
+            'maintenance_schedules' => $summary->maintenanceSchedules,
         ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 
         return 0;
@@ -111,6 +115,7 @@ final class StorageImportCommand implements CommandInterface
             new JsonPeerReputationRepository($this->writer, $dir . '/peer_reputation.json', $this->config->peerReputationNeutralScore),
             new JsonHistoryRepository($dir . '/history'),
             new JsonRollupRepository($this->writer, $dir . '/rollups'),
+            new JsonMaintenanceScheduleRepository($this->writer, $dir . '/maintenance_schedules.json'),
         );
     }
 }

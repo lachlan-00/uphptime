@@ -34,6 +34,7 @@ use Uphptime\Peer\PeerReputationScorer;
 use Uphptime\Peer\PeerSelectorInterface;
 use Uphptime\Site\Site;
 use Uphptime\Site\SiteState;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 use Uphptime\Support\RandomInterface;
@@ -52,6 +53,7 @@ final class CanarySampler
         private readonly PeerSelectorInterface $peerSelector,
         private readonly PeerResultAcquirer $peerResultAcquirer,
         private readonly PeerReputationRepositoryInterface $reputationRepository,
+        private readonly MaintenanceScheduleRepositoryInterface $maintenanceScheduleRepository,
         private readonly PeerReputationScorer $scorer,
         private readonly ClockInterface $clock,
         private readonly Config $config,
@@ -133,7 +135,7 @@ final class CanarySampler
             error: $result->error,
             stateBefore: $status,
             stateAfter: $status,
-            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt),
+            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt, $this->maintenanceScheduleRepository->all()),
             evidence: $evidence,
             attestation: $attestation,
             role: $role,

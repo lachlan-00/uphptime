@@ -34,6 +34,8 @@ use Uphptime\Peer\Peer;
 use Uphptime\Peer\PeerKey;
 use Uphptime\Peer\PeerReputation;
 use Uphptime\Site\CheckType;
+use Uphptime\Site\MaintenanceRepeatUnit;
+use Uphptime\Site\MaintenanceSchedule;
 use Uphptime\Site\MaintenanceWindow;
 use Uphptime\Site\Site;
 use Uphptime\Site\SiteRuntimeState;
@@ -41,6 +43,7 @@ use Uphptime\Site\SiteState;
 use Uphptime\Storage\Portability\StorageCopier;
 use Uphptime\Storage\Portability\StorageRepositorySet;
 use Uphptime\Tests\Storage\InMemoryHistoryRepository;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryPeerRepository;
 use Uphptime\Tests\Storage\InMemoryPeerReputationRepository;
 use Uphptime\Tests\Storage\InMemoryRollupRepository;
@@ -87,13 +90,29 @@ final class StorageCopierTest extends TestCase
         $rollup        = new DailyRollup('site-a', '2026-01-01', 1, 1, 0, 0, 0, 1, 0, 100.0, $now, $now, $now);
         $sourceRollups->write($rollup);
 
-        $source      = new StorageRepositorySet($sourceSites, $sourcePeers, $sourceReputations, $sourceHistory, $sourceRollups);
+        $sourceSchedules = new InMemoryMaintenanceScheduleRepository();
+        $sourceSchedules->save(new MaintenanceSchedule(
+            id: 'sched-1',
+            name: 'Weekly release',
+            enabled: true,
+            startsAt: $now,
+            durationMinutes: 60,
+            timezone: 'UTC',
+            repeatEvery: 1,
+            repeatUnit: MaintenanceRepeatUnit::Week,
+            repeatDayOfWeek: null,
+            endsOn: null,
+            note: null,
+        ));
+
+        $source      = new StorageRepositorySet($sourceSites, $sourcePeers, $sourceReputations, $sourceHistory, $sourceRollups, $sourceSchedules);
         $destination = new StorageRepositorySet(
             new InMemorySiteRepository(),
             new InMemoryPeerRepository(),
             new InMemoryPeerReputationRepository(),
             new InMemoryHistoryRepository(),
             new InMemoryRollupRepository(),
+            new InMemoryMaintenanceScheduleRepository(),
         );
 
         $summary = (new StorageCopier())->copy($source, $destination);
@@ -103,6 +122,8 @@ final class StorageCopierTest extends TestCase
         self::assertSame(1, $summary->peerReputations);
         self::assertSame(1, $summary->historyRecords);
         self::assertSame(1, $summary->rollups);
+        self::assertSame(1, $summary->maintenanceSchedules);
+        self::assertNotNull($destination->maintenanceSchedules->find('sched-1'));
 
         $copiedSite = $destination->sites->find('site-a');
         self::assertNotNull($copiedSite);

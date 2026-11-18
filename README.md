@@ -112,6 +112,33 @@ php bin/uphptime maintenance:list --site=SITE_ID
 php bin/uphptime maintenance:remove --site=SITE_ID --window-id=WINDOW_ID
 ```
 
+Recurring maintenance schedules are defined once in a standalone catalog, then assigned to any
+number of sites - define a "weekly Sunday release" schedule a single time and assign it to every
+site that updates then, instead of re-entering it per site. Each repeats every
+N hour(s)/day(s)/week(s)/month(s), starting from `--start` and evaluated in `--timezone` -
+independent of the node's own timezone, and of whatever timezone a check happens to run in. For a
+weekly repeat, `--repeat-day-of-week` picks which day it lands on (defaults to `--start`'s own
+day). Like one-off windows, occurrences are excluded from uptime reporting but are local
+bookkeeping only - peers keep checking as normal:
+
+```sh
+# Define it once:
+php bin/uphptime maintenance:schedule:add --name="Weekly release" --start="2026-11-22 23:55" --timezone=Australia/Brisbane --duration-minutes=120 --repeat-unit=week --repeat-day-of-week=sunday --note="Weekly release window"
+php bin/uphptime maintenance:schedule:list
+php bin/uphptime maintenance:schedule:remove --schedule-id=SCHEDULE_ID
+
+# Then assign/unassign it to as many sites as apply:
+php bin/uphptime maintenance:schedule:assign --site=SITE_ID --schedule-id=SCHEDULE_ID
+php bin/uphptime maintenance:schedule:unassign --site=SITE_ID --schedule-id=SCHEDULE_ID
+```
+
+`--repeat-unit` is `hour`, `day`, `week` (default) or `month`; `--repeat-every` is the repeat
+interval (default `1`, e.g. `--repeat-every=2 --repeat-unit=week` for fortnightly). `--ends-on`
+stops future occurrences after a date; `--enabled=0` adds a schedule without activating it.
+`maintenance:schedule:remove` deletes it from the catalog and un-assigns it from every site that
+had it; `maintenance:schedule:list` takes an optional `--site=SITE_ID` to see only the schedules
+one site is assigned to, or `--schedule-id=SCHEDULE_ID` for just one entry.
+
 ## Configuration and checks
 
 Edit `config/node.json`; the available settings and defaults are in

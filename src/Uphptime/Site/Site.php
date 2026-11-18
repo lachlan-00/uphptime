@@ -35,6 +35,7 @@ final class Site
     /**
      * @param MaintenanceWindow[] $maintenanceWindows
      * @param string[] $groups
+     * @param string[] $scheduleIds
      */
     public function __construct(
         public readonly string $id,
@@ -52,6 +53,9 @@ final class Site
         public readonly array $maintenanceWindows = [],
         public readonly ?ChallengeDelivery $challengeDelivery = null,
         public readonly array $groups = [],
+        // Ids into the standalone MaintenanceSchedule catalog (MaintenanceScheduleRepositoryInterface)
+        // this site is assigned to - a schedule is defined once and shared across many sites.
+        public readonly array $scheduleIds = [],
     ) {}
 
     // Resolves the effective check interval: the per-site override, or the node default.
@@ -60,11 +64,21 @@ final class Site
         return $this->checkIntervalSeconds ?? $defaultIntervalSeconds;
     }
 
-    // Whether $when falls inside any of this site's currently configured maintenance windows.
-    public function isUnderMaintenanceAt(DateTimeImmutable $when): bool
+    // Whether $when falls inside any of this site's currently configured one-off windows, or any
+    // occurrence of a recurring schedule it's assigned to (each evaluated in its own timezone).
+    // $schedules is the catalog to check against - typically the whole MaintenanceScheduleRepositoryInterface::all(),
+    // since this filters to $this->scheduleIds itself, so callers never need to resolve a subset.
+    /** @param MaintenanceSchedule[] $schedules */
+    public function isUnderMaintenanceAt(DateTimeImmutable $when, array $schedules = []): bool
     {
         foreach ($this->maintenanceWindows as $window) {
             if ($window->contains($when)) {
+                return true;
+            }
+        }
+
+        foreach ($schedules as $schedule) {
+            if (in_array($schedule->id, $this->scheduleIds, true) && $schedule->isActiveAt($when)) {
                 return true;
             }
         }
@@ -97,6 +111,7 @@ final class Site
             $this->maintenanceWindows,
             $challengeDelivery,
             $this->groups,
+            $this->scheduleIds,
         );
     }
 
@@ -120,6 +135,7 @@ final class Site
             $this->maintenanceWindows,
             $this->challengeDelivery,
             $groups,
+            $this->scheduleIds,
         );
     }
 
@@ -143,6 +159,31 @@ final class Site
             $maintenanceWindows,
             $this->challengeDelivery,
             $this->groups,
+            $this->scheduleIds,
+        );
+    }
+
+    // Returns a copy of this site with its assigned maintenance schedule ids replaced.
+    /** @param string[] $scheduleIds */
+    public function withScheduleIds(array $scheduleIds): self
+    {
+        return new self(
+            $this->id,
+            $this->name,
+            $this->url,
+            $this->host,
+            $this->port,
+            $this->checkType,
+            $this->keyword,
+            $this->keywordMode,
+            $this->checkIntervalSeconds,
+            $this->enabled,
+            $this->createdAt,
+            $this->state,
+            $this->maintenanceWindows,
+            $this->challengeDelivery,
+            $this->groups,
+            $scheduleIds,
         );
     }
 
@@ -165,6 +206,7 @@ final class Site
             $this->maintenanceWindows,
             $this->challengeDelivery,
             $this->groups,
+            $this->scheduleIds,
         );
     }
 }

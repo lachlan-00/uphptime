@@ -34,12 +34,15 @@ use Uphptime\Peer\Peer;
 use Uphptime\Peer\PeerKey;
 use Uphptime\Peer\PeerReputation;
 use Uphptime\Site\CheckType;
+use Uphptime\Site\MaintenanceRepeatUnit;
+use Uphptime\Site\MaintenanceSchedule;
 use Uphptime\Site\Site;
 use Uphptime\Site\SiteRuntimeState;
 use Uphptime\Site\SiteState;
 use Uphptime\Storage\Portability\StorageRepositorySet;
 use Uphptime\Storage\Portability\StorageWiper;
 use Uphptime\Tests\Storage\InMemoryHistoryRepository;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryPeerRepository;
 use Uphptime\Tests\Storage\InMemoryPeerReputationRepository;
 use Uphptime\Tests\Storage\InMemoryRollupRepository;
@@ -96,7 +99,22 @@ final class StorageWiperTest extends TestCase
         $rollups = new InMemoryRollupRepository();
         $rollups->write(new DailyRollup('site-a', '2026-01-01', 1, 1, 0, 0, 0, 1, 0, 100.0, $now, $now, $now));
 
-        $target = new StorageRepositorySet($sites, $peers, $reputations, $history, $rollups);
+        $schedules = new InMemoryMaintenanceScheduleRepository();
+        $schedules->save(new MaintenanceSchedule(
+            id: 'sched-1',
+            name: 'Weekly release',
+            enabled: true,
+            startsAt: $now,
+            durationMinutes: 60,
+            timezone: 'UTC',
+            repeatEvery: 1,
+            repeatUnit: MaintenanceRepeatUnit::Week,
+            repeatDayOfWeek: null,
+            endsOn: null,
+            note: null,
+        ));
+
+        $target = new StorageRepositorySet($sites, $peers, $reputations, $history, $rollups, $schedules);
 
         (new StorageWiper())->wipe($target);
 
@@ -105,6 +123,7 @@ final class StorageWiperTest extends TestCase
         self::assertSame([], $reputations->all());
         self::assertSame([], $history->readDay('site-a', '2026-01-01'));
         self::assertNull($rollups->read('site-a', '2026-01-01'));
+        self::assertSame([], $schedules->all());
         self::assertTrue($target->isEmpty());
     }
 }

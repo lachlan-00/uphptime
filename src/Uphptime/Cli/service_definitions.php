@@ -33,6 +33,11 @@ use Uphptime\Cli\Commands\CheckRunCommand;
 use Uphptime\Cli\Commands\MaintenanceAddCommand;
 use Uphptime\Cli\Commands\MaintenanceListCommand;
 use Uphptime\Cli\Commands\MaintenanceRemoveCommand;
+use Uphptime\Cli\Commands\MaintenanceScheduleAddCommand;
+use Uphptime\Cli\Commands\MaintenanceScheduleAssignCommand;
+use Uphptime\Cli\Commands\MaintenanceScheduleListCommand;
+use Uphptime\Cli\Commands\MaintenanceScheduleRemoveCommand;
+use Uphptime\Cli\Commands\MaintenanceScheduleUnassignCommand;
 use Uphptime\Cli\Commands\PeersAddCommand;
 use Uphptime\Cli\Commands\PeersAllowlistAddCommand;
 use Uphptime\Cli\Commands\PeersAllowlistClearCommand;
@@ -77,6 +82,11 @@ return [
             'maintenance:add' => $c->get(MaintenanceAddCommand::class),
             'maintenance:list' => $c->get(MaintenanceListCommand::class),
             'maintenance:remove' => $c->get(MaintenanceRemoveCommand::class),
+            'maintenance:schedule:add' => $c->get(MaintenanceScheduleAddCommand::class),
+            'maintenance:schedule:list' => $c->get(MaintenanceScheduleListCommand::class),
+            'maintenance:schedule:remove' => $c->get(MaintenanceScheduleRemoveCommand::class),
+            'maintenance:schedule:assign' => $c->get(MaintenanceScheduleAssignCommand::class),
+            'maintenance:schedule:unassign' => $c->get(MaintenanceScheduleUnassignCommand::class),
             'check:run' => $c->get(CheckRunCommand::class),
             'report' => $c->get(ReportCommand::class),
             'pinger:refresh-cache' => $c->get(PingerRefreshCacheCommand::class),
@@ -101,6 +111,11 @@ return [
     MaintenanceAddCommand::class => autowire(),
     MaintenanceListCommand::class => autowire(),
     MaintenanceRemoveCommand::class => autowire(),
+    MaintenanceScheduleAddCommand::class => autowire(),
+    MaintenanceScheduleAssignCommand::class => autowire(),
+    MaintenanceScheduleListCommand::class => autowire(),
+    MaintenanceScheduleRemoveCommand::class => autowire(),
+    MaintenanceScheduleUnassignCommand::class => autowire(),
     PeerKeyOptionResolver::class => autowire(),
     PeersAddCommand::class => autowire(),
     PeersAllowlistAddCommand::class => autowire(),

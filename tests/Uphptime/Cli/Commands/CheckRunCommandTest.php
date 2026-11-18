@@ -38,6 +38,7 @@ use Uphptime\Tests\Api\ChallengeToken\InMemoryChallengeTokenStore;
 use Uphptime\Tests\Check\FakeChecker;
 use Uphptime\Tests\Cli\FakeConsoleOutput;
 use Uphptime\Tests\Storage\InMemoryHistoryRepository;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryRollupRepository;
 use Uphptime\Tests\Storage\InMemorySiteRepository;
 use Uphptime\Tests\Support\FakeClock;
@@ -58,6 +59,7 @@ final class CheckRunCommandTest extends TestCase
         $runner  = new CheckRunner(
             $sites,
             $history,
+            new InMemoryMaintenanceScheduleRepository(),
             new SiteStateMachine(),
             new RollupBuilder($sites, $history, $rollups, $clock),
             new RetentionPruner($sites, $history, $rollups, $clock),

@@ -40,6 +40,7 @@ use Uphptime\Site\Site;
 use Uphptime\Site\SiteRuntimeState;
 use Uphptime\Site\SiteStateMachine;
 use Uphptime\Storage\HistoryRepositoryInterface;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
@@ -60,6 +61,7 @@ final class CheckRunner
     public function __construct(
         private readonly SiteRepositoryInterface $siteRepository,
         private readonly HistoryRepositoryInterface $historyRepository,
+        private readonly MaintenanceScheduleRepositoryInterface $maintenanceScheduleRepository,
         private readonly SiteStateMachine $stateMachine,
         private readonly RollupBuilder $rollupBuilder,
         private readonly RetentionPruner $retentionPruner,
@@ -219,7 +221,7 @@ final class CheckRunner
             error: $result->error,
             stateBefore: $site->state->status,
             stateAfter: $newState->status,
-            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt),
+            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt, $this->maintenanceScheduleRepository->all()),
             evidence: $evidence,
             attestation: $attestation,
             role: $role,
@@ -248,7 +250,7 @@ final class CheckRunner
             error: $result->error,
             stateBefore: $status,
             stateAfter: $status,
-            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt),
+            excludedByMaintenance: $site->isUnderMaintenanceAt($checkedAt, $this->maintenanceScheduleRepository->all()),
             evidence: $evidence,
             attestation: $attestation,
             role: $role,

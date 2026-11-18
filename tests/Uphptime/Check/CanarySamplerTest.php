@@ -47,6 +47,7 @@ use Uphptime\Site\SiteRuntimeState;
 use Uphptime\Site\SiteState;
 use Uphptime\Tests\Api\ChallengeToken\InMemoryChallengeTokenStore;
 use Uphptime\Tests\Api\Client\FakePeerCheckClient;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryPeerRepository;
 use Uphptime\Tests\Storage\InMemoryPeerReputationRepository;
 use Uphptime\Tests\Support\FakeClock;
@@ -185,7 +186,7 @@ final class CanarySamplerTest extends TestCase
         $acquirer            = new PeerResultAcquirer($selector, $client, $reputations, $scorer, $clock, $attestationVerifier, $config->maxDelegatesPerAcquisition);
         $checkers            = ['http' => new FakeChecker([CheckResult::pass()])];
 
-        return new CanarySampler($random, $selector, $acquirer, $reputations, $scorer, $clock, $config, $checkers, $config->canarySampleRate);
+        return new CanarySampler($random, $selector, $acquirer, $reputations, new InMemoryMaintenanceScheduleRepository(), $scorer, $clock, $config, $checkers, $config->canarySampleRate);
     }
 
     private function site(): Site

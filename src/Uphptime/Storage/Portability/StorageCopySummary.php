@@ -36,5 +36,6 @@ final class StorageCopySummary
         public readonly int $peerReputations,
         public readonly int $historyRecords,
         public readonly int $rollups,
+        public readonly int $maintenanceSchedules = 0,
     ) {}
 }

@@ -37,6 +37,33 @@ CREATE TABLE IF NOT EXISTS site_maintenance_windows (
     CONSTRAINT fk_site_maintenance_windows_site FOREIGN KEY (site_id) REFERENCES sites (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- The recurring maintenance schedule catalog: defined once, then assigned to any number of sites
+-- via site_schedule_assignments below, rather than duplicated per site.
+CREATE TABLE IF NOT EXISTS maintenance_schedules (
+    id VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    enabled TINYINT(1) NOT NULL,
+    starts_at DATETIME(6) NOT NULL,
+    duration_minutes INT NOT NULL,
+    timezone VARCHAR(64) NOT NULL,
+    repeat_every INT NOT NULL,
+    repeat_unit VARCHAR(8) NOT NULL,
+    repeat_day_of_week TINYINT NULL,
+    ends_on DATETIME(6) NULL,
+    note TEXT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS site_schedule_assignments (
+    id BIGINT AUTO_INCREMENT,
+    site_id VARCHAR(64) NOT NULL,
+    schedule_id VARCHAR(16) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_site_schedule_assignments (site_id, schedule_id),
+    CONSTRAINT fk_site_schedule_assignments_site FOREIGN KEY (site_id) REFERENCES sites (id) ON DELETE CASCADE,
+    CONSTRAINT fk_site_schedule_assignments_schedule FOREIGN KEY (schedule_id) REFERENCES maintenance_schedules (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS site_groups (
     id BIGINT AUTO_INCREMENT,
     site_id VARCHAR(64) NOT NULL,

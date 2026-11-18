@@ -40,7 +40,9 @@ use Uphptime\Storage\SiteRepositoryInterface;
 /**
  * Sites plus their embedded runtime state flattened onto one row - every state field is a small
  * scalar, and next_due_at specifically wants to be a real indexed column. Maintenance windows live in
- * their own child table (ON DELETE CASCADE), same pattern as a peer's target allowlist.
+ * their own child table (ON DELETE CASCADE), same pattern as a peer's target allowlist. Recurring
+ * maintenance schedules are a separate catalog table (MaintenanceScheduleRepositoryInterface); a site
+ * only stores which ones it's assigned to, via site_schedule_assignments.
  */
 final class PdoSiteRepository implements SiteRepositoryInterface
 {
@@ -85,6 +87,7 @@ final class PdoSiteRepository implements SiteRepositoryInterface
             $this->pdo->beginTransaction();
             $this->upsertSiteRow($site);
             $this->replaceMaintenanceWindows($site);
+            $this->replaceScheduleAssignments($site);
             $this->replaceGroups($site);
             $this->pdo->commit();
         } catch (PDOException $exception) {
@@ -124,6 +127,7 @@ final class PdoSiteRepository implements SiteRepositoryInterface
             maintenanceWindows: $this->maintenanceWindowsFor($siteId),
             challengeDelivery: $row['challenge_delivery'] !== null ? ChallengeDelivery::from((string) $row['challenge_delivery']) : null,
             groups: $this->groupsFor($siteId),
+            scheduleIds: $this->scheduleIdsFor($siteId),
         );
     }
 
@@ -150,6 +154,15 @@ final class PdoSiteRepository implements SiteRepositoryInterface
         );
     }
 
+    /** @return string[] */
+    private function scheduleIdsFor(string $siteId): array
+    {
+        return array_map(
+            static fn(array $row): string => (string) $row['schedule_id'],
+            $this->query('SELECT * FROM site_schedule_assignments WHERE site_id = ? ORDER BY id ASC', [$siteId]),
+        );
+    }
+
     private function replaceGroups(Site $site): void
     {
         $this->rawExecute('DELETE FROM site_groups WHERE site_id = ?', [$site->id]);
@@ -167,6 +180,18 @@ final class PdoSiteRepository implements SiteRepositoryInterface
             $this->rawExecute(
                 'INSERT INTO site_maintenance_windows (site_id, window_id, starts_at, ends_at, note) VALUES (?, ?, ?, ?, ?)',
                 [$site->id, $window->id, PdoTimestamp::format($window->startsAt), PdoTimestamp::format($window->endsAt), $window->note],
+            );
+        }
+    }
+
+    private function replaceScheduleAssignments(Site $site): void
+    {
+        $this->rawExecute('DELETE FROM site_schedule_assignments WHERE site_id = ?', [$site->id]);
+
+        foreach ($site->scheduleIds as $scheduleId) {
+            $this->rawExecute(
+                'INSERT INTO site_schedule_assignments (site_id, schedule_id) VALUES (?, ?)',
+                [$site->id, $scheduleId],
             );
         }
     }

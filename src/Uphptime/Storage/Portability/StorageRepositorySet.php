@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Uphptime\Storage\Portability;
 
 use Uphptime\Storage\HistoryRepositoryInterface;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\PeerRepositoryInterface;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Storage\RollupRepositoryInterface;
@@ -33,7 +34,7 @@ use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
  * One full backend's worth of repositories, bundled so StorageCopier/StorageWiper take one argument
- * per side instead of five - a backend-agnostic handle, since every property is an interface.
+ * per side instead of six - a backend-agnostic handle, since every property is an interface.
  */
 final class StorageRepositorySet
 {
@@ -43,11 +44,12 @@ final class StorageRepositorySet
         public readonly PeerReputationRepositoryInterface $peerReputations,
         public readonly HistoryRepositoryInterface $history,
         public readonly RollupRepositoryInterface $rollups,
+        public readonly MaintenanceScheduleRepositoryInterface $maintenanceSchedules,
     ) {}
 
     // Cheap enough to check directly: history/rollups can't meaningfully exist without a site to own them.
     public function isEmpty(): bool
     {
-        return $this->sites->all() === [] && $this->peers->all() === [] && $this->peerReputations->all() === [];
+        return $this->sites->all() === [] && $this->peers->all() === [] && $this->peerReputations->all() === [] && $this->maintenanceSchedules->all() === [];
     }
 }

@@ -30,13 +30,16 @@ use Psr\Container\ContainerInterface;
 use Uphptime\Config\Config;
 use Uphptime\Storage\HistoryRepositoryInterface;
 use Uphptime\Storage\JsonHistoryRepository;
+use Uphptime\Storage\JsonMaintenanceScheduleRepository;
 use Uphptime\Storage\JsonPeerRepository;
 use Uphptime\Storage\JsonPeerReputationRepository;
 use Uphptime\Storage\JsonRollupRepository;
 use Uphptime\Storage\JsonSiteRepository;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\Pdo\MySqlDialect;
 use Uphptime\Storage\Pdo\PdoConnectionFactory;
 use Uphptime\Storage\Pdo\PdoHistoryRepository;
+use Uphptime\Storage\Pdo\PdoMaintenanceScheduleRepository;
 use Uphptime\Storage\Pdo\PdoPeerRepository;
 use Uphptime\Storage\Pdo\PdoPeerReputationRepository;
 use Uphptime\Storage\Pdo\PdoRollupRepository;
@@ -68,6 +71,13 @@ return [
         }
 
         return new PdoHistoryRepository($c->get(PDO::class), $c->get(SqlDialect::class), $config->timezone);
+    }),
+    MaintenanceScheduleRepositoryInterface::class => factory(static function (ContainerInterface $c): MaintenanceScheduleRepositoryInterface {
+        if ($c->get(Config::class)->storageBackend === 'json') {
+            return new JsonMaintenanceScheduleRepository($c->get(AtomicWriter::class), $c->get('data.dir') . '/maintenance_schedules.json');
+        }
+
+        return new PdoMaintenanceScheduleRepository($c->get(PDO::class), $c->get(SqlDialect::class));
     }),
     PeerRepositoryInterface::class => factory(static function (ContainerInterface $c): PeerRepositoryInterface {
         if ($c->get(Config::class)->storageBackend === 'json') {

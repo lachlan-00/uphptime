@@ -160,6 +160,17 @@ final class JsonSiteRepository implements SiteRepositoryInterface
         return $windows;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return string[]
+     */
+    private function scheduleIdsFromArray(array $data): array
+    {
+        $rawIds = $data['schedule_ids'] ?? [];
+
+        return is_array($rawIds) ? array_values(array_map(static fn(mixed $id): string => (string) $id, $rawIds)) : [];
+    }
+
     /** @return array<string, mixed> */
     private function readFile(): array
     {
@@ -198,6 +209,7 @@ final class JsonSiteRepository implements SiteRepositoryInterface
                 ? ChallengeDelivery::from((string) $data['challenge_delivery'])
                 : null,
             groups: $this->groupsFromArray($data),
+            scheduleIds: $this->scheduleIdsFromArray($data),
         );
     }
 
@@ -256,6 +268,7 @@ final class JsonSiteRepository implements SiteRepositoryInterface
             ),
             'challenge_delivery' => $site->challengeDelivery?->value,
             'groups' => $site->groups,
+            'schedule_ids' => $site->scheduleIds,
         ];
     }
 }

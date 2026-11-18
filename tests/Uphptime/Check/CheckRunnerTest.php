@@ -56,6 +56,7 @@ use Uphptime\Site\SiteStateMachine;
 use Uphptime\Tests\Api\ChallengeToken\InMemoryChallengeTokenStore;
 use Uphptime\Tests\Api\Client\FakePeerCheckClient;
 use Uphptime\Tests\Storage\InMemoryHistoryRepository;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryPeerRepository;
 use Uphptime\Tests\Storage\InMemoryPeerReputationRepository;
 use Uphptime\Tests\Storage\InMemoryRollupRepository;
@@ -633,7 +634,7 @@ final class CheckRunnerTest extends TestCase
         ];
 
         $confirmer = new DownConfirmer($selector, $peerClient, $reputations, $scorer, $clock, $config, $attestation, $selfCheckers, $config->maxDelegatesPerAcquisition);
-        $canary    = new CanarySampler($random, $selector, $acquirer, $reputations, $scorer, $clock, $config, $selfCheckers, $config->canarySampleRate);
+        $canary    = new CanarySampler($random, $selector, $acquirer, $reputations, new InMemoryMaintenanceScheduleRepository(), $scorer, $clock, $config, $selfCheckers, $config->canarySampleRate);
 
         return [$selector, $acquirer, $confirmer, $canary];
     }
@@ -658,6 +659,7 @@ final class CheckRunnerTest extends TestCase
         return new CheckRunner(
             $sites,
             $history,
+            new InMemoryMaintenanceScheduleRepository(),
             new SiteStateMachine(),
             new RollupBuilder($sites, $history, $rollups, $clock),
             new RetentionPruner($sites, $history, $rollups, $clock),

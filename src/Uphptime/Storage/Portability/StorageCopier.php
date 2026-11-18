@@ -50,6 +50,11 @@ final class StorageCopier
             $destination->peerReputations->save($reputation);
         }
 
+        $maintenanceSchedules = $source->maintenanceSchedules->all();
+        foreach ($maintenanceSchedules as $schedule) {
+            $destination->maintenanceSchedules->save($schedule);
+        }
+
         $historyRecords = 0;
         $rollups        = 0;
         foreach ($sites as $site) {
@@ -69,6 +74,6 @@ final class StorageCopier
             }
         }
 
-        return new StorageCopySummary(count($sites), count($peers), count($peerReputations), $historyRecords, $rollups);
+        return new StorageCopySummary(count($sites), count($peers), count($peerReputations), $historyRecords, $rollups, count($maintenanceSchedules));
     }
 }

@@ -31,10 +31,13 @@ use PHPUnit\Framework\TestCase;
 use Uphptime\Site\ChallengeDelivery;
 use Uphptime\Site\CheckType;
 use Uphptime\Site\KeywordMode;
+use Uphptime\Site\MaintenanceRepeatUnit;
+use Uphptime\Site\MaintenanceSchedule;
 use Uphptime\Site\MaintenanceWindow;
 use Uphptime\Site\Site;
 use Uphptime\Site\SiteRuntimeState;
 use Uphptime\Site\SiteState;
+use Uphptime\Storage\Pdo\PdoMaintenanceScheduleRepository;
 use Uphptime\Storage\Pdo\PdoSiteRepository;
 
 /**
@@ -198,6 +201,27 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
         self::assertSame([], $resaved->maintenanceWindows);
     }
 
+    // Assigned schedule ids live in a child join table (FK'd to the maintenance_schedules catalog)
+    // and must survive a save/find round trip, including a resave that replaces the assignment set
+    // entirely rather than appending to it.
+    public function testScheduleIdsRoundTripAndAreReplacedOnResave(): void
+    {
+        $repository = $this->repository();
+        $this->seedCatalogSchedules(['sched-1', 'sched-2', 'sched-3']);
+
+        $repository->save($this->site('a')->withScheduleIds(['sched-1', 'sched-2']));
+
+        $found = $repository->find('a');
+        self::assertNotNull($found);
+        self::assertSame(['sched-1', 'sched-2'], $found->scheduleIds);
+
+        $repository->save($found->withScheduleIds(['sched-3']));
+
+        $resaved = $repository->find('a');
+        self::assertNotNull($resaved);
+        self::assertSame(['sched-3'], $resaved->scheduleIds);
+    }
+
     public function testNextDueAtOrderingSupportsDueSiteSelection(): void
     {
         $repository = $this->repository();
@@ -238,6 +262,29 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
     private function repository(): PdoSiteRepository
     {
         return new PdoSiteRepository($this->pdo, $this->dialectFor($this->dialectName()));
+    }
+
+    /** @param string[] $ids */
+    private function seedCatalogSchedules(array $ids): void
+    {
+        $repository = new PdoMaintenanceScheduleRepository($this->pdo, $this->dialectFor($this->dialectName()));
+        $now        = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
+
+        foreach ($ids as $id) {
+            $repository->save(new MaintenanceSchedule(
+                id: $id,
+                name: $id,
+                enabled: true,
+                startsAt: $now,
+                durationMinutes: 60,
+                timezone: 'UTC',
+                repeatEvery: 1,
+                repeatUnit: MaintenanceRepeatUnit::Week,
+                repeatDayOfWeek: null,
+                endsOn: null,
+                note: null,
+            ));
+        }
     }
 
     private function site(string $id, ?DateTimeImmutable $nextDueAt = null): Site

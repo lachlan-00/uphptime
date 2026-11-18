@@ -49,6 +49,7 @@ use Uphptime\Reporting\RollupBuilder;
 use Uphptime\Reporting\UptimeReportCalculator;
 use Uphptime\Site\SiteStateMachine;
 use Uphptime\Storage\HistoryRepositoryInterface;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
@@ -67,6 +68,7 @@ return [
             $c->get(PeerSelectorInterface::class),
             $c->get(PeerResultAcquirer::class),
             $c->get(PeerReputationRepositoryInterface::class),
+            $c->get(MaintenanceScheduleRepositoryInterface::class),
             $c->get(PeerReputationScorer::class),
             $c->get(ClockInterface::class),
             $config,
@@ -83,6 +85,7 @@ return [
         return new CheckRunner(
             $c->get(SiteRepositoryInterface::class),
             $c->get(HistoryRepositoryInterface::class),
+            $c->get(MaintenanceScheduleRepositoryInterface::class),
             $c->get(SiteStateMachine::class),
             $c->get(RollupBuilder::class),
             $c->get(RetentionPruner::class),

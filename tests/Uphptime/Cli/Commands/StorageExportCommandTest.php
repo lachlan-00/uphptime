@@ -43,6 +43,7 @@ use Uphptime\Storage\Portability\StorageWiper;
 use Uphptime\Support\AtomicWriter;
 use Uphptime\Tests\Cli\FakeConsoleOutput;
 use Uphptime\Tests\Storage\InMemoryHistoryRepository;
+use Uphptime\Tests\Storage\InMemoryMaintenanceScheduleRepository;
 use Uphptime\Tests\Storage\InMemoryPeerRepository;
 use Uphptime\Tests\Storage\InMemoryPeerReputationRepository;
 use Uphptime\Tests\Storage\InMemoryRollupRepository;
@@ -125,6 +126,7 @@ final class StorageExportCommandTest extends TestCase
             new InMemoryPeerReputationRepository(),
             new InMemoryHistoryRepository(),
             new InMemoryRollupRepository(),
+            new InMemoryMaintenanceScheduleRepository(),
             new AtomicWriter(),
             new Config('data', 300, 90, 10, 240, 900, 'uphptime-test', 'UTC'),
             new StorageCopier(),

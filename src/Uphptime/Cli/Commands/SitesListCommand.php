@@ -30,6 +30,7 @@ use Uphptime\Cli\CommandInterface;
 use Uphptime\Cli\ConsoleOutputInterface;
 use Uphptime\Config\Config;
 use Uphptime\Site\Site;
+use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
@@ -40,6 +41,7 @@ final class SitesListCommand implements CommandInterface
 {
     public function __construct(
         private readonly SiteRepositoryInterface $siteRepository,
+        private readonly MaintenanceScheduleRepositoryInterface $maintenanceScheduleRepository,
         private readonly ClockInterface $clock,
         private readonly Config $config,
         private readonly ConsoleOutputInterface $output,
@@ -47,8 +49,9 @@ final class SitesListCommand implements CommandInterface
 
     public function run(array $args): int
     {
-        $now   = $this->clock->now();
-        $sites = array_map(
+        $now       = $this->clock->now();
+        $schedules = $this->maintenanceScheduleRepository->all();
+        $sites     = array_map(
             fn(Site $site): array => [
                 'id' => $site->id,
                 'name' => $site->name,
@@ -58,7 +61,8 @@ final class SitesListCommand implements CommandInterface
                 'check_type' => $site->checkType->value,
                 'enabled' => $site->enabled,
                 'state' => $site->state->effectiveStatus($now, $this->config->staleAfterSeconds)->value,
-                'in_maintenance' => $site->isUnderMaintenanceAt($now),
+                'in_maintenance' => $site->isUnderMaintenanceAt($now, $schedules),
+                'schedule_ids' => $site->scheduleIds,
                 'consecutive_fails' => $site->state->consecutiveFails,
                 'last_checked_at' => $site->state->lastCheckedAt?->format(DateTimeInterface::ATOM),
                 'next_due_at' => $site->state->nextDueAt->format(DateTimeInterface::ATOM),

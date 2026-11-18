@@ -35,6 +35,29 @@ CREATE TABLE IF NOT EXISTS site_maintenance_windows (
     UNIQUE (site_id, window_id)
 );
 
+-- The recurring maintenance schedule catalog: defined once, then assigned to any number of sites
+-- via site_schedule_assignments below, rather than duplicated per site.
+CREATE TABLE IF NOT EXISTS maintenance_schedules (
+    id VARCHAR(16) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    enabled BOOLEAN NOT NULL,
+    starts_at TIMESTAMPTZ(6) NOT NULL,
+    duration_minutes INT NOT NULL,
+    timezone VARCHAR(64) NOT NULL,
+    repeat_every INT NOT NULL,
+    repeat_unit VARCHAR(8) NOT NULL,
+    repeat_day_of_week SMALLINT NULL,
+    ends_on TIMESTAMPTZ(6) NULL,
+    note TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS site_schedule_assignments (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id VARCHAR(64) NOT NULL REFERENCES sites (id) ON DELETE CASCADE,
+    schedule_id VARCHAR(16) NOT NULL REFERENCES maintenance_schedules (id) ON DELETE CASCADE,
+    UNIQUE (site_id, schedule_id)
+);
+
 CREATE TABLE IF NOT EXISTS site_groups (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     site_id VARCHAR(64) NOT NULL REFERENCES sites (id) ON DELETE CASCADE,

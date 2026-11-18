@@ -33,9 +33,10 @@ final class StorageWiper
 {
     public function wipe(StorageRepositorySet $target): void
     {
-        $sites           = $target->sites->all();
-        $peers           = $target->peers->all();
-        $peerReputations = $target->peerReputations->all();
+        $sites                = $target->sites->all();
+        $peers                = $target->peers->all();
+        $peerReputations      = $target->peerReputations->all();
+        $maintenanceSchedules = $target->maintenanceSchedules->all();
 
         foreach ($sites as $site) {
             foreach ($target->history->datesWithHistory($site->id) as $date) {
@@ -56,6 +57,10 @@ final class StorageWiper
 
         foreach ($peers as $peer) {
             $target->peers->remove($peer->id);
+        }
+
+        foreach ($maintenanceSchedules as $schedule) {
+            $target->maintenanceSchedules->remove($schedule->id);
         }
     }
 }
