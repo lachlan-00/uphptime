@@ -385,6 +385,44 @@ final class CheckRunnerTest extends TestCase
         );
     }
 
+    public function testNextDueAtStaysOnScheduleGridDespitePerRunLatency(): void
+    {
+        // Reproduces the production drift: every run's processing (bootstrap, delegation,
+        // confirmation round-trips) takes a few real seconds, so each cron tick's "now" lands a
+        // little later than the nominal 5-minute mark. The old next_due_at = checked_at + interval
+        // formula baked that lag into the schedule every cycle; once the accumulated lag crept past
+        // the following tick's evaluation instant, that tick saw the site as not-yet-due and the
+        // check was silently skipped, halving the effective frequency. Anchoring to the site's
+        // previous scheduled slot instead must keep every tick on the original grid regardless of
+        // how much latency any individual run cost.
+        $clock = new FakeClock('2026-01-01T00:00:03+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $history = new InMemoryHistoryRepository();
+        $checker = new FakeChecker([CheckResult::pass(), CheckResult::pass(), CheckResult::pass()]);
+        $runner  = $this->buildRunner($sites, $history, $clock, $checker, $this->config());
+
+        $summary = $runner->run();
+        self::assertSame(1, $summary->checked, 'due at 00:00:00, 3 seconds of latency into this run');
+        self::assertEquals(new DateTimeImmutable('2026-01-01T00:05:00+00:00'), $sites->find('a')->state->nextDueAt);
+
+        // The next tick fires nominally at 00:05:00 but this run only reaches the due-check 2 seconds
+        // in - under the old formula the site would still have been due at 00:05:03 and this tick
+        // would have found it not-yet-due and skipped it entirely.
+        $clock->advance('+4 minutes 59 seconds');
+        $summary = $runner->run();
+        self::assertSame(1, $summary->checked, 'must still be due on schedule, not skipped by the previous run\'s latency');
+        self::assertEquals(new DateTimeImmutable('2026-01-01T00:10:00+00:00'), $sites->find('a')->state->nextDueAt);
+
+        // A third tick, with only 1 second of latency this time, must land on the same fixed grid.
+        $clock->advance('+4 minutes 59 seconds');
+        $summary = $runner->run();
+        self::assertSame(1, $summary->checked);
+        self::assertEquals(new DateTimeImmutable('2026-01-01T00:15:00+00:00'), $sites->find('a')->state->nextDueAt);
+
+        self::assertCount(3, $history->readDay('a', '2026-01-01'), 'one check per tick - the fix must never skip a tick nor spam extra checks to catch up');
+    }
+
     public function testPeerFailureCorroboratedByAnUnreachableSelfCheckIsDown(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');

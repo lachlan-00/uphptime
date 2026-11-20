@@ -317,8 +317,31 @@ final class CheckRunner
             ? $site->state->withErrorChecked($checkedAt)
             : $this->stateMachine->apply($site->state, $result->outcome, $checkedAt);
 
-        $interval = $site->intervalSeconds($this->config->checkIntervalSeconds);
+        $interval  = $site->intervalSeconds($this->config->checkIntervalSeconds);
+        $nextDueAt = $this->nextDueAtAfter($site->state->nextDueAt, $checkedAt, $interval);
 
-        return $newState->withNextDueAt($checkedAt->modify(sprintf('+%d seconds', $interval)));
+        return $newState->withNextDueAt($nextDueAt);
+    }
+
+    // Advances from the site's previous scheduled slot by whole multiples of $interval until the
+    // result lands strictly after $checkedAt - never from $checkedAt itself. dueSitesInOrder() reads
+    // the clock once near the very start of a run, before any delegation/confirmation round-trips
+    // have spent their time; if the next slot were $checkedAt + $interval instead, every second that
+    // this run's own processing took would get baked into the schedule and carried forward, and once
+    // that accumulated lag crossed the next cron tick's evaluation instant, that tick would see the
+    // site as not-yet-due and skip it - silently halving the effective check frequency over time. By
+    // always stepping forward from the last scheduled slot (a fixed grid), per-run latency is absorbed
+    // without ever shifting the grid. A slot already at or behind $checkedAt (a missed-tick backlog,
+    // e.g. after downtime) is fast-forwarded to the next free slot without ever queuing the missed
+    // checks themselves - so recovering from a gap can never turn into a burst of back-to-back checks.
+    private function nextDueAtAfter(DateTimeImmutable $previousDueAt, DateTimeImmutable $checkedAt, int $interval): DateTimeImmutable
+    {
+        $nextDueAt = $previousDueAt;
+
+        do {
+            $nextDueAt = $nextDueAt->modify(sprintf('+%d seconds', $interval));
+        } while ($nextDueAt <= $checkedAt);
+
+        return $nextDueAt;
     }
 }
