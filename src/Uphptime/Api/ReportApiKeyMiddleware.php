@@ -33,10 +33,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Uphptime\Config\Config;
 
 /**
- * Guards the report API with a single shared bearer key, not HMAC: this is an owner-facing dashboard
- * credential, not a pairwise peer trust relationship. An empty configured key disables the route (404)
- * rather than leaving it reachable with no real gate; a wrong key is a uniform 401, same spirit as
- * HmacAuthMiddleware. Also answers CORS preflight, since the dashboard is a separate-origin static site.
+ * Guards the report API with a single shared bearer key, not HMAC peer trust. An empty configured key
+ * disables the route (404) rather than leaving it open; a wrong key is a uniform 401.
  */
 final class ReportApiKeyMiddleware implements MiddlewareInterface
 {

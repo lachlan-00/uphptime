@@ -60,8 +60,7 @@ final class JsonPeerReputationRepository implements PeerReputationRepositoryInte
         return PeerReputation::neutral($peerId, $this->neutralScore);
     }
 
-    // readModifyWrite() holds one lock across the whole read-decide-write sequence, so two concurrent
-    // removes/saves can never race on a stale read.
+    // readModifyWrite() holds one lock across the whole sequence, so concurrent writes can't race on a stale read.
     public function remove(string $peerId): void
     {
         $this->writer->readModifyWrite($this->path, function (?string $current) use ($peerId): string {

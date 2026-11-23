@@ -33,9 +33,8 @@ use Uphptime\Api\ActionInterface;
 use Uphptime\Reporting\SiteReportSetBuilder;
 
 /**
- * Every site's uptime % for one period, plus the merged overall figure - pure reuse of
- * SiteReportSetBuilder, the same reporting math `report --group=` prints from the CLI. Gated by
- * ReportApiKeyMiddleware, which never calls this action at all when the report API is unconfigured.
+ * Every site's uptime % for one period, plus the merged overall figure, via SiteReportSetBuilder.
+ * Gated by ReportApiKeyMiddleware, which never calls this action when the report API is unconfigured.
  */
 final class ReportOverviewAction implements ActionInterface
 {

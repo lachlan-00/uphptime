@@ -30,9 +30,7 @@ use Uphptime\Api\OpenApi\OpenApiSpecBuilder;
 use Uphptime\Api\Signing\SignatureHeaders;
 
 /**
- * Catches the two ways this spec can silently rot: an unresolved $ref, and docs/openapi.json drifting
- * from what OpenApiSpecBuilder currently produces (the same check "composer api:docs:check" runs, but
- * exercised here under plain "composer tests" too, not only the dedicated qa step).
+ * Catches the two ways this spec can silently rot: an unresolved $ref, and docs/openapi.json drifting from the builder's output.
  */
 final class OpenApiSpecStructureTest extends TestCase
 {

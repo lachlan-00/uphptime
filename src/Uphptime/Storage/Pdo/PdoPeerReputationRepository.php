@@ -30,10 +30,8 @@ use Uphptime\Peer\PeerReputation;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
 
 /**
- * All scalar, one row per peer, deliberately with no foreign key to peers - get() must return a
- * neutral record for any peer id regardless of whether a peers row exists, same as the JSON backend.
- * save() is a plain blind-overwrite upsert, not stronger than the JSON backend's own already-blind
- * overwrite behavior.
+ * All scalar, one row per peer, with no foreign key to peers - get() returns a neutral record even when no row exists.
+ * save() is a plain blind-overwrite upsert, same as the JSON backend.
  */
 final class PdoPeerReputationRepository implements PeerReputationRepositoryInterface
 {

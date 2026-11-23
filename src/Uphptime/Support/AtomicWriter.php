@@ -47,11 +47,8 @@ final class AtomicWriter
         });
     }
 
-    // Reads and rewrites $path as one atomic unit under a single exclusive lock, so a concurrent
-    // reader/writer can never interleave between the read and the write (the lost-update race that
-    // separate read()-then-write() calls would allow). $modify receives the current contents (or
-    // null if the file doesn't exist yet) and returns the new contents to persist, or null to leave
-    // the file exactly as it was - the lock is still held for the whole decision, just nothing writes.
+    // Reads and rewrites $path as one atomic unit under a single exclusive lock, avoiding a lost-update race.
+    // $modify returns the new contents to persist, or null to leave the file untouched.
     public function readModifyWrite(string $path, callable $modify): void
     {
         $this->ensureDirectoryExists(dirname($path));

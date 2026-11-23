@@ -36,9 +36,8 @@ use Uphptime\Storage\PeerRepositoryInterface;
 use ValueError;
 
 /**
- * Adds a new key as the active outbound one and demotes any previous active outbound key to
- * inbound-only (never removed) - no hard cutover: this node accepts the peer's still-old-signed
- * traffic while originating with the new key, until the peer rotates too and retires the old one.
+ * Adds a new active outbound key and demotes the previous one to inbound-only, never removed.
+ * No hard cutover: old-signed traffic still verifies until the peer rotates and retires it too.
  */
 final class PeersKeysRotateCommand implements CommandInterface
 {

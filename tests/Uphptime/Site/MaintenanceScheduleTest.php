@@ -36,9 +36,7 @@ final class MaintenanceScheduleTest extends TestCase
     {
         $schedule = $this->weeklySundayBrisbaneSchedule();
 
-        // Mon 2026-11-23 00:30 Brisbane is still inside the Sunday-night occurrence, but is a
-        // Monday instant in UTC (2026-11-22 14:30 UTC) - proves the window is anchored to the
-        // schedule's own timezone, not the caller's.
+        // Mon 00:30 Brisbane (still the Sunday-night occurrence) is a Monday instant in UTC - the window follows its own timezone.
         self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T14:30:00+00:00')));
     }
 
@@ -206,9 +204,7 @@ final class MaintenanceScheduleTest extends TestCase
         self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-15T13:56:00+00:00')));
     }
 
-    // Every week on Sunday 23:55 Brisbane (UTC+10, no DST) for 2 hours, starting from a Sunday -
-    // checked against UTC instants, since the node's own timezone and the schedule's timezone need
-    // not match.
+    // Every week on Sunday 23:55 Brisbane (UTC+10, no DST) for 2 hours, checked against UTC instants.
     private function weeklySundayBrisbaneSchedule(?DateTimeImmutable $endsOn = null): MaintenanceSchedule
     {
         return new MaintenanceSchedule(

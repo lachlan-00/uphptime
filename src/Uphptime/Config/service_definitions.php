@@ -34,9 +34,7 @@ use Uphptime\Support\SystemClock;
 use Uphptime\Support\SystemNetworkStack;
 use Uphptime\Support\SystemRandom;
 
-// Default Config resolution: UPHPTIME_CONFIG_PATH if set, else the repo's config/node.json. A
-// caller that needs a specific path (DicBuilder::build($path), tests) overrides this one entry
-// rather than relying on the environment.
+// Default Config resolution: UPHPTIME_CONFIG_PATH if set, else the repo's config/node.json.
 return [
     ClockInterface::class => factory(static fn(Config $config): ClockInterface => new SystemClock($config->timezone)),
     NetworkStackInterface::class => factory(static fn(): NetworkStackInterface => new SystemNetworkStack()),

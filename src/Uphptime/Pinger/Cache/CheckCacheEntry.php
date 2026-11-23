@@ -148,8 +148,7 @@ final class CheckCacheEntry
         ];
     }
 
-    // Reconstructs the ephemeral site DTO this entry was probed for, so the refresh cron can re-probe
-    // it without ever having seen the original request payload.
+    // Reconstructs the ephemeral site DTO this entry was probed for, so the refresh cron can re-probe it directly.
     public function toSite(): Site
     {
         return new Site(
@@ -168,8 +167,7 @@ final class CheckCacheEntry
         );
     }
 
-    // Reactive hits bump this to the requesting moment; proactive cron refreshes pass the same value
-    // back in unchanged, so idle eviction tracks genuine requests, not the cron's own activity.
+    // Reactive hits bump this to now; the cron's own refreshes pass the same value back, so idle eviction tracks real requests only.
     public function withLastRequestedAt(DateTimeImmutable $lastRequestedAt): self
     {
         return new self(

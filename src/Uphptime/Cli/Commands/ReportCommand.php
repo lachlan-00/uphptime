@@ -37,9 +37,8 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Prints a day/month/overall uptime report as JSON - one site (by --id=, --name=, or a bare positional
- * argument) or a whole --group= at once, the latter sharing SiteReportSetBuilder with the HTTP report API
- * so the two never disagree about the same request.
+ * Prints a day/month/overall uptime report as JSON for one site or a --group=, the latter sharing
+ * SiteReportSetBuilder with the HTTP report API so the two never disagree.
  */
 final class ReportCommand implements CommandInterface
 {

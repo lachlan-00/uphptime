@@ -46,15 +46,13 @@ final class SpawnedPhpServer
     {
         $this->port = random_int(20000, 39000);
 
-        // Array form bypasses the shell entirely (no cmd.exe wrapper on Windows), so the PID proc_open
-        // hands back is the real php.exe process and proc_terminate()/taskkill actually reach it.
+        // Array form bypasses the shell (no cmd.exe wrapper), so the PID proc_open hands back is the real php.exe process.
         $command = [PHP_BINARY, '-S', sprintf('127.0.0.1:%d', $this->port), '-t', $docRoot];
         if ($router !== null) {
             $command[] = $router;
         }
 
-        // Merge onto the full current environment (never replace it): a Windows child process that
-        // loses SYSTEMROOT/PHPRC etc. can silently load a different php.ini or fail to load extensions.
+        // Merges onto the full current environment; a child process losing SYSTEMROOT/PHPRC can silently load the wrong php.ini.
         $fullEnv = array_merge((array) getenv(), $env);
 
         $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $docRoot, $fullEnv);
@@ -94,10 +92,7 @@ final class SpawnedPhpServer
 
         proc_close($this->process);
 
-        // The OS can take a moment to tear down the listening socket after the process is confirmed
-        // dead (observed on Windows); a caller relying on the port now refusing connections - such as
-        // a test that stops the server and immediately expects the next request to fail - would
-        // otherwise race a still-open backlog.
+        // The OS can take a moment to tear down the listening socket after the process is confirmed dead.
         $this->waitUntilStopped();
     }
 

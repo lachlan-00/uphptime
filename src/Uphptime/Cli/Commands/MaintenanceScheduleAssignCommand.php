@@ -32,9 +32,7 @@ use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Assigns one catalog schedule to a site - idempotent, so assigning the same schedule twice is a
- * no-op rather than a duplicate. This is how one schedule ends up covering many sites, instead of
- * each site needing its own copy.
+ * Assigns one catalog schedule to a site - idempotent, so assigning it twice is a no-op, not a duplicate.
  */
 final class MaintenanceScheduleAssignCommand implements CommandInterface
 {

@@ -32,9 +32,8 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Every site's (optionally group-filtered) uptime report for one period, plus the merged overall
- * figure - the one place this is computed, shared by the HTTP report API and the CLI's own
- * `report --group=` so the two never drift into reporting different numbers for the same request.
+ * Every site's (optionally group-filtered) uptime report for one period, plus the merged overall figure.
+ * Shared by the HTTP report API and the CLI's `report --group=` so the two never report different numbers.
  */
 final class SiteReportSetBuilder
 {
@@ -45,9 +44,7 @@ final class SiteReportSetBuilder
         private readonly Config $config,
     ) {}
 
-    // An explicit --period=/period= always wins; otherwise --date=/--month= implies which period was
-    // meant, since passing one without the other silently had no effect - confirmed by the user hitting
-    // exactly that with `report --id=... --month=2026-11` (no --period=month) before this existed.
+    // An explicit --period= always wins; otherwise --date=/--month= alone implies which period was meant.
     public static function resolvePeriod(?string $period, ?string $date, ?string $month): string
     {
         if ($period !== null) {

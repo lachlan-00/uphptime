@@ -173,8 +173,7 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
         self::assertSame(['staging'], $resaved->groups);
     }
 
-    // Maintenance windows live in a child table and must survive a save/find round trip, including
-    // a resave that replaces the window set entirely rather than appending to it.
+    // Maintenance windows live in a child table; a resave must replace the window set, not append to it.
     public function testMaintenanceWindowsRoundTripAndAreReplacedOnResave(): void
     {
         $repository = $this->repository();
@@ -231,9 +230,7 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
         self::assertSame(SiteState::Up, $found->state->status);
     }
 
-    // Assigned schedule ids live in a child join table (FK'd to the maintenance_schedules catalog)
-    // and must survive a save/find round trip, including a resave that replaces the assignment set
-    // entirely rather than appending to it.
+    // Assigned schedule ids live in a child join table; a resave must replace the assignment set, not append to it.
     public function testScheduleIdsRoundTripAndAreReplacedOnResave(): void
     {
         $repository = $this->repository();

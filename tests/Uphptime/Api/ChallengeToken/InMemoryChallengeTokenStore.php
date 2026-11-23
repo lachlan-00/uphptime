@@ -37,8 +37,7 @@ final class InMemoryChallengeTokenStore implements ChallengeTokenStoreInterface
     /** @var array<string, ChallengeToken> */
     private array $tokens = [];
 
-    // A fixed token lets a test predict what issue() will mint, so it can script a peer response
-    // claiming to have observed that exact value ahead of time - real issuance is always random.
+    // A fixed token lets a test predict what issue() will mint, so it can script a peer response claiming to have observed it.
     public function __construct(private readonly ?string $fixedToken = null) {}
 
     public function current(string $siteId, DateTimeImmutable $now): ?ChallengeToken

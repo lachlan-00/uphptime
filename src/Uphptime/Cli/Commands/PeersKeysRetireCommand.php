@@ -33,10 +33,8 @@ use Uphptime\Peer\PeerKey;
 use Uphptime\Storage\PeerRepositoryInterface;
 
 /**
- * Removes a key entirely - the manual local-revocation path for a compromised key. A disabled-but-
- * present key would still be readable on disk and still show in peers:list, so retirement means gone,
- * not flagged. Does not refuse removing a peer's last remaining key; an emergency revocation that
- * temporarily breaks the relationship is exactly what this exists for.
+ * Removes a key entirely - the manual local-revocation path for a compromised key.
+ * Allows removing a peer's last remaining key.
  */
 final class PeersKeysRetireCommand implements CommandInterface
 {

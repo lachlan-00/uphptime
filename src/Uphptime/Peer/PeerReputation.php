@@ -52,8 +52,7 @@ final class PeerReputation
         return $this->excludedUntil !== null && $this->excludedUntil > $now;
     }
 
-    // Starts a fresh decision from the probation score once a cooldown has elapsed, keeping the
-    // exclusion streak so repeated relapses still lengthen the next cooldown.
+    // Starts fresh from the probation score after a cooldown, keeping the streak so relapses lengthen the next one.
     public function onProbation(float $probationScore): self
     {
         return new self($this->peerId, $probationScore, $this->consecutiveExclusions, null, $this->lastEventAt, $this->totalEvents);

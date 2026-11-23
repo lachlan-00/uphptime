@@ -32,9 +32,8 @@ use Uphptime\Check\CheckResult;
 use Uphptime\Site\Site;
 
 /**
- * Passes on any 2xx or 3xx status code. Redirects aren't followed (CurlHttpClient), so a 3xx here means
- * the origin itself answered with a valid redirect - e.g. to an SSO login page - which means it's up,
- * regardless of where it points. Only a genuine non-response (4xx/5xx/connection failure) counts as down.
+ * Passes on any 2xx or 3xx status code, since redirects aren't followed and a 3xx proves the origin
+ * answered. Only a genuine non-response (4xx/5xx/connection failure) counts as down.
  */
 final class HttpChecker implements CheckerInterface
 {

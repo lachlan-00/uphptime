@@ -32,9 +32,7 @@ use Uphptime\Peer\Peer;
 use Uphptime\Storage\PeerRepositoryInterface;
 
 /**
- * Drops a pattern from a peer's target allowlist. Not an error if it wasn't there - unlike peer/key
- * ids, a pattern has no identity an admin script can track precisely, so idempotent removal is more
- * useful than a hard failure.
+ * Drops a pattern from a peer's target allowlist. Not an error if it wasn't there.
  */
 final class PeersAllowlistRemoveCommand implements CommandInterface
 {

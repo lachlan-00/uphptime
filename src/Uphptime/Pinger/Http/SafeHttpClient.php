@@ -38,11 +38,8 @@ use Uphptime\Site\ChallengeDelivery;
 use Uphptime\Version;
 
 /**
- * Implements HttpClientInterface exactly like CurlHttpClient, but resolves each hostname once and
- * pins the validated IP via CURLOPT_RESOLVE (defeating DNS rebinding), follows redirects manually
- * with CURLOPT_FOLLOWLOCATION off so every hop is independently re-validated, and caps the response
- * body. Evidence from the most recent call is readable via lastEvidence() as a side channel, so the
- * Http/HttpKeywordChecker classes that depend on HttpClientInterface stay completely unaware of it.
+ * An HttpClientInterface that pins each resolved IP via CURLOPT_RESOLVE and re-validates every redirect hop.
+ * Evidence from the most recent call is readable via lastEvidence() as a side channel.
  */
 final class SafeHttpClient implements HttpClientInterface
 {
@@ -61,8 +58,7 @@ final class SafeHttpClient implements HttpClientInterface
         $this->lastEvidence = null;
         $probeStartedAt     = new DateTimeImmutable();
 
-        // Stored site URLs sometimes carry a stray trailing newline/space from copy-paste; left in,
-        // curl rejects the whole request with CURLE_URL_MALFORMAT before anything is attempted.
+        // Trims a stray trailing newline/space, which otherwise makes curl reject the URL outright.
         $url                = trim($url);
         $currentUrl         = preg_match('#^[a-z][a-z0-9+.-]*://#i', $url) === 1 ? $url : 'http://' . $url;
         $redirectsFollowed  = 0;
@@ -261,8 +257,7 @@ final class SafeHttpClient implements HttpClientInterface
         error_log((string) json_encode($message, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES));
     }
 
-    // Returns null on any failure (missing header, unreachable well-known path) rather than throwing -
-    // a missing token is for the owner's verifier to judge, never a reason to fail the probe itself.
+    // Returns null on any failure rather than throwing - a missing token is for the verifier to judge.
     /** @param array{host: string, port: int, ip: string} $target */
     private function observeChallengeToken(?ChallengeDelivery $challengeDelivery, string $url, array $target, string $rawHeaders, float $timeoutSeconds, string $userAgent): ?string
     {

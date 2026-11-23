@@ -51,8 +51,7 @@ final class CurlHttpClient implements HttpClientInterface
         curl_setopt($handle, CURLOPT_TIMEOUT_MS, $timeoutMs);
         curl_setopt($handle, CURLOPT_CONNECTTIMEOUT_MS, $timeoutMs);
         curl_setopt($handle, CURLOPT_USERAGENT, $userAgent !== '' ? $userAgent : Version::USER_AGENT);
-        // Without this, a dual-stack target with no real IPv6 route from here wastes the whole
-        // connect timeout failing over IPv6 first before curl falls back to IPv4 itself.
+        // Without this, a dual-stack target with no real IPv6 route here wastes the connect timeout on IPv6 first.
         if (!$this->networkStack->hasIpv6Route()) {
             curl_setopt($handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         }

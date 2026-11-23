@@ -38,11 +38,8 @@ use Uphptime\Site\SiteState;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Sites plus their embedded runtime state flattened onto one row - every state field is a small
- * scalar, and next_due_at specifically wants to be a real indexed column. Maintenance windows live in
- * their own child table (ON DELETE CASCADE), same pattern as a peer's target allowlist. Recurring
- * maintenance schedules are a separate catalog table (MaintenanceScheduleRepositoryInterface); a site
- * only stores which ones it's assigned to, via site_schedule_assignments.
+ * Sites plus their embedded runtime state flattened onto one row, so next_due_at is a real indexed column.
+ * Maintenance windows live in their own child table; a site stores only which recurring schedules it's assigned to.
  */
 final class PdoSiteRepository implements SiteRepositoryInterface
 {
@@ -79,8 +76,7 @@ final class PdoSiteRepository implements SiteRepositoryInterface
         $this->execute('DELETE FROM sites WHERE id = ?', [$id]);
     }
 
-    // One transaction: upsert the sites row, then fully replace its maintenance windows and groups, so
-    // a concurrent reader never sees a half-replaced child-row set.
+    // One transaction: upserts the sites row then fully replaces its maintenance windows/groups, so a reader never sees a half-replaced set.
     public function save(Site $site): void
     {
         try {

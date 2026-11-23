@@ -48,8 +48,7 @@ return [
         return new CacheRefreshRunner(
             $c->get(CheckCacheRepositoryInterface::class),
             $c->get(CacheRefresher::class),
-            // Always the plain executor, never the caching decorator below - the cron IS a refresh,
-            // not a request the cache should itself try to intercept.
+            // Always the plain executor, never the caching decorator - the cron is itself a refresh.
             $c->get(DelegatedCheckExecutor::class),
             $c->get(ClockInterface::class),
             $c->get(Config::class),
@@ -71,8 +70,7 @@ return [
             $c->get(PreferredIpSelector::class),
         );
     }),
-    // Milestone 2's plain executor when PingerCacheEnabled is off, reproducing that milestone's
-    // always-fresh behavior exactly; the caching decorator wraps it otherwise.
+    // The plain executor when pingerCacheEnabled is off; the caching decorator wraps it otherwise.
     DelegatedCheckExecutorInterface::class => factory(static function (ContainerInterface $c): DelegatedCheckExecutorInterface {
         $config = $c->get(Config::class);
         $plain  = $c->get(DelegatedCheckExecutor::class);

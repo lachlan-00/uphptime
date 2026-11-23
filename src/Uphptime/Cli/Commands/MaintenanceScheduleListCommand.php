@@ -34,9 +34,8 @@ use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Lists the standalone maintenance schedule catalog, with which sites each one is currently
- * assigned to. Pass --schedule-id to see just one, or --site to see only the schedules a
- * particular site is assigned to.
+ * Lists the standalone maintenance schedule catalog with each one's assigned sites.
+ * Filter with --schedule-id for one schedule, or --site for one site's schedules.
  */
 final class MaintenanceScheduleListCommand implements CommandInterface
 {

@@ -43,9 +43,7 @@ use Uphptime\Support\ClockInterface;
 
 /**
  * Verifies an inbound signed request (key lookup, clock skew, signature, nonce, rate limit) and signs
- * the outbound response with the same peer's key. Every auth failure reason answers with the byte-
- * identical uniform 401 so a client can't learn which check failed; rate-limiting is a distinct,
- * non-secret 429.
+ * the outbound response with the same peer's key. Every auth failure answers an identical 401; rate-limiting is a distinct 429.
  */
 final class HmacAuthMiddleware implements MiddlewareInterface
 {

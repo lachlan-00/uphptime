@@ -53,8 +53,7 @@ final class CurlHttpClientTest extends TestCase
         @rmdir(self::$docRoot);
     }
 
-    // Forcing IPv4 resolution (no local IPv6 route) must not break the plain, common case of
-    // probing an IPv4 loopback target - this is the regression this whole feature must never cause.
+    // Forcing IPv4 resolution (no local IPv6 route) must not break probing a plain IPv4 loopback target.
     public function testForcingIpv4ResolutionStillReachesAnIpv4Target(): void
     {
         $client = new CurlHttpClient(new FakeNetworkStack(false));

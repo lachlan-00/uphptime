@@ -28,9 +28,8 @@ namespace Uphptime\Pinger;
 use Uphptime\Check\CheckResult;
 
 /**
- * A completed delegated check: the result the owner's state machine understands, plus the Layer 2
- * evidence (if any) gathered while producing it. servedFromCache/cacheAgeSeconds default to the
- * always-fresh milestone-2 values; the pinger cache is the only producer of a cached one.
+ * A completed delegated check: the result the state machine understands, plus any Layer 2 evidence
+ * gathered producing it. servedFromCache/cacheAgeSeconds default to always-fresh; only the cache sets them.
  */
 final class DelegatedCheckOutcome
 {

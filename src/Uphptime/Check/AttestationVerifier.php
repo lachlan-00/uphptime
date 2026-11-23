@@ -30,11 +30,8 @@ use Uphptime\Site\Site;
 use Uphptime\Support\ClockInterface;
 
 /**
- * The owner-side half of result attestation: decides whether a delegated result is even usable, and
- * what attestation level it earned. Every one of the three acquisition loops (PeerResultAcquirer,
- * DownConfirmer, CanarySampler) calls this on a non-exception delegated result instead of trusting
- * whatever `attestation` value the pinger itself reported - only the owner holds the real token to
- * compare against, so only the owner can honestly say whether Layer 1 passed.
+ * The owner-side half of result attestation: decides whether a delegated result is usable, and what
+ * attestation level it earned, since only the owner holds the real token to compare against.
  */
 final class AttestationVerifier
 {
@@ -50,8 +47,7 @@ final class AttestationVerifier
             return AttestationVerdict::valid('none');
         }
 
-        // Nothing to fake-verify about a site reporting itself down or erroring - only a Pass can be
-        // falsely attested to.
+        // Only a Pass can be falsely attested to - nothing to fake-verify about a down or erroring result.
         if (!$site->usesChallengeToken() || $result->outcome !== CheckOutcome::Pass) {
             return AttestationVerdict::valid('evidence');
         }

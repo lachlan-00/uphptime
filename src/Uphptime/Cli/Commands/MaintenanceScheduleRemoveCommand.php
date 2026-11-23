@@ -32,9 +32,8 @@ use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Drops one schedule from the catalog by id, and un-assigns it from every site that had it (so no
- * site is left pointing at a dangling id). Not an error if it wasn't there, matching
- * MaintenanceRemoveCommand's idempotent-removal precedent.
+ * Drops one schedule from the catalog by id and un-assigns it from every site that had it.
+ * Not an error if it wasn't there.
  */
 final class MaintenanceScheduleRemoveCommand implements CommandInterface
 {

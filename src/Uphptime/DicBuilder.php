@@ -34,9 +34,8 @@ use Uphptime\Config\Config;
 use Uphptime\Config\ConfigLoader;
 
 /**
- * Aggregates one service_definitions.php per domain, mirroring Ampache's DicBuilder. $configPath,
- * when given, overrides the env-var-based default so a test or the two-node harness can point a
- * container at an isolated config/data tree without mutating the process environment.
+ * Aggregates one service_definitions.php per domain. A non-null $configPath overrides the env-var
+ * default, letting a caller point the container at an isolated config/data tree.
  */
 final class DicBuilder
 {

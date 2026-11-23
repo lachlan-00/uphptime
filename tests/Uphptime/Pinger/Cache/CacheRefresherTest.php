@@ -43,9 +43,7 @@ final class CacheRefresherTest extends TestCase
 {
     private string $directory;
 
-    // The property the whole design exists for: a slow probe triggered one way and a concurrent call
-    // for the identical fingerprint triggered the other way can never both probe - whichever gets the
-    // lock first does, and the other waits and reads that result instead of starting its own.
+    // Concurrent calls for the identical fingerprint never both probe: whichever gets the lock first does, the other reads its result.
     public function testConcurrentCallsForTheSameFingerprintAcrossBothTriggersResultInExactlyOneProbe(): void
     {
         $probeLog   = $this->directory . '/probe-log.txt';
@@ -82,8 +80,7 @@ final class CacheRefresherTest extends TestCase
 
         $autoload = dirname(__DIR__, 4) . '/vendor/autoload.php';
 
-        // One call styled as the proactive cron (requestedAt = null), one styled as a reactive
-        // request (requestedAt = now) - launched together, for the identical fingerprint.
+        // One call styled as the proactive cron (requestedAt = null), one as a reactive request (requestedAt = now), same fingerprint.
         $processes     = [];
         $pipesByLabel  = [];
         foreach (['cron' => 'null', 'reactive' => 'now'] as $label => $requestedAtArg) {

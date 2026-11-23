@@ -26,10 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Storage\Portability;
 
 /**
- * Copies one full backend's data onto another, purely through the repository interfaces both sides
- * already implement - no serialization code of its own, since a Site/Peer/HistoryRecord/DailyRollup
- * already round-trips through any repository. Sites carry their maintenance windows and peers their
- * keys/allowlist along for free, since those are plain properties on the objects being saved.
+ * Copies one full backend's data onto another, purely through the repository interfaces both already implement.
+ * Sites and peers carry their maintenance windows / keys / allowlist along for free, since those are plain object properties.
  */
 final class StorageCopier
 {

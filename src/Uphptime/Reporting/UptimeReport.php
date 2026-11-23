@@ -26,9 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Reporting;
 
 /**
- * An aggregated uptime figure; states how much of the period errored/failed/self-sourced, never just a number.
- * `checksUnknown` counts error outcomes; the `unknown_*` API keys are kept as aliases of `checks_error`/`error_percent`.
- * `checksFail` counts target-side failure outcomes, distinct from `checksUnknown` (our own check machinery erroring).
+ * An aggregated uptime figure for one period. `checksFail` is a target-side failure; `checksUnknown` is
+ * our own check machinery erroring, exposed as both `checks_error`/`error_percent` and `unknown_*`.
  */
 final class UptimeReport
 {
@@ -85,9 +84,7 @@ final class UptimeReport
         return $this->checksTotal > 0 ? round(($this->checksUnknown / $this->checksTotal) * 100, 4) : null;
     }
 
-    // Percentage of countable checks (everything except maintenance) that passed; null when nothing
-    // counts. Error outcomes (checksUnknown, also exposed as checks_error) are countable and count
-    // against uptime, the same as a failed check.
+    // Percentage of countable checks (everything except maintenance) that passed; an error counts the same as a fail.
     public function uptimePercent(): ?float
     {
         $denominator = $this->checksTotal - $this->checksExcludedMaintenance;

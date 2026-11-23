@@ -40,10 +40,8 @@ use Uphptime\Support\ClockInterface;
 use Uphptime\Support\RandomInterface;
 
 /**
- * Re-runs a configurable fraction of accepted passes through a second, different peer. Agreement is
- * silent; a disagreement is scored against both peers and settled by a third-peer tie-break, which
- * flags the already-applied pass but never itself touches site state - it is a retrospective
- * integrity check on a result already acted on, not a second vote on current status.
+ * Re-runs a configurable fraction of accepted passes through a second, different peer. A disagreement
+ * is scored against both peers and settled by a third-peer tie-break, but never touches site state.
  */
 final class CanarySampler
 {
@@ -108,8 +106,7 @@ final class CanarySampler
     }
 
     // The canary pick self-falls-back at zero other usable peers, same principle as down-confirmation.
-    // The tie-break pick must NOT self-fallback: self-probing to break a tie between two peers that
-    // already disagreed adds no independence, so with no third peer it stays genuinely unresolved.
+    // The tie-break pick must not self-fallback - a third peer is required or it stays unresolved.
     /** @param string[] $excludePeerIds */
     private function acquireCandidate(Site $site, array $excludePeerIds, bool $allowSelfFallback = true): ?AcquiredPeerResult
     {

@@ -29,8 +29,7 @@ use Uphptime\Site\ChallengeDelivery;
 
 /**
  * Performs one GET request. Throws RuntimeException for any transport failure (DNS, timeout, refused).
- * $challengeDelivery is result attestation Layer 1: a self-check client (CurlHttpClient) ignores it -
- * only a pinger-delegated client (SafeHttpClient) ever has a token worth observing and reporting.
+ * $challengeDelivery is only ever observed by a pinger-delegated client (SafeHttpClient), never self-check.
  */
 interface HttpClientInterface
 {

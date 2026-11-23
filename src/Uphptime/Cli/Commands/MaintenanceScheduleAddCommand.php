@@ -37,14 +37,8 @@ use Uphptime\Site\MaintenanceSchedule;
 use Uphptime\Storage\MaintenanceScheduleRepositoryInterface;
 
 /**
- * Adds a recurring maintenance schedule to the standalone catalog: starting --start (in
- * --timezone), repeating every --repeat-every --repeat-unit (hour/day/week/month), for
- * --duration-minutes each time; for weekly repeats, --repeat-day-of-week picks which day it lands
- * on. A schedule is defined once here and then assigned to any number of sites with
- * `maintenance:schedule:assign` rather than being duplicated per site. Like MaintenanceAddCommand's
- * one-off windows, this is local bookkeeping only - it only decides whether an assigned site's own
- * resulting history records get marked `excluded_by_maintenance`, evaluated in the schedule's own
- * timezone, not the node's.
+ * Adds a recurring maintenance schedule to the standalone catalog, to be assigned to any number of
+ * sites via `maintenance:schedule:assign` rather than duplicated per site.
  */
 final class MaintenanceScheduleAddCommand implements CommandInterface
 {

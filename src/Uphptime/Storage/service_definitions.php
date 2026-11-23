@@ -56,8 +56,7 @@ use Uphptime\Support\PathResolver;
 return [
     AtomicWriter::class => autowire(),
     PdoConnectionFactory::class => autowire(),
-    // Only resolved when storage_backend isn't "json" (PHP-DI resolves a factory lazily), so a
-    // JSON-only install never needs a PDO driver loaded at all.
+    // Only resolved when storage_backend isn't "json" (PHP-DI resolves lazily), so a JSON-only install never loads a PDO driver.
     PDO::class => factory(
         static fn(ContainerInterface $c): PDO => $c->get(PdoConnectionFactory::class)->create($c->get(Config::class)),
     ),
@@ -109,9 +108,7 @@ return [
 
         return new PdoSiteRepository($c->get(PDO::class), $c->get(SqlDialect::class));
     }),
-    // Resolves relative to the repo root for the common single-node case, but honors an absolute
-    // data_dir as-is - a node pointed at its own config via UPHPTIME_CONFIG_PATH needs its own
-    // isolated data directory, not always one hardcoded to this checkout's root.
+    // Resolves relative to the repo root for the common case, but honors an absolute data_dir as-is for a node with its own config.
     'data.dir' => factory(static function (ContainerInterface $c): string {
         $config = $c->get(Config::class);
 

@@ -26,9 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\History;
 
 /**
- * What one history record represents within its check cycle. Only Primary counts toward uptime
- * reporting - the others are supplementary audit trail (a non-authoritative observation, a canary sample, or the
- * third-peer tie-break on a canary disagreement) that never drives the uptime percentage on its own.
+ * What one history record represents within its check cycle. Only Primary counts toward uptime;
+ * the others are supplementary audit trail (confirmation, canary, tie-break).
  */
 enum HistoryRecordRole: string
 {

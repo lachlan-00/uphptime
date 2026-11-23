@@ -26,9 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Pinger;
 
 /**
- * The default-blocked ranges a pinger refuses to probe unless explicitly allowed in node config:
- * loopback, link-local (incl. cloud metadata), RFC1918, CGNAT, multicast, reserved/documentation,
- * and their IPv6 equivalents.
+ * The default-blocked ranges a pinger refuses unless explicitly allowed in config: loopback,
+ * link-local (incl. cloud metadata), RFC1918, CGNAT, multicast, reserved/documentation, and IPv6 too.
  */
 final class BlockedRanges
 {

@@ -28,9 +28,7 @@ namespace Uphptime\Pinger;
 use Exception;
 
 /**
- * Thrown when the egress policy refuses a target. Deliberately NOT a RuntimeException: the Http/Tcp
- * checkers catch RuntimeException around the client call and map it to Fail, but a policy refusal is
- * our own machinery refusing to probe, never a claim about the target, so it must propagate past that
- * catch block to be mapped to CheckOutcome::Error by the caller instead (mirrors CheckConfigurationException).
+ * Thrown when the egress policy refuses a target. Deliberately not a RuntimeException, so it passes
+ * through the Http/Tcp checkers' RuntimeException-to-Fail mapping and reaches the caller as an Error.
  */
 final class EgressPolicyException extends Exception {}

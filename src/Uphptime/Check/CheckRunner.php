@@ -46,12 +46,7 @@ use Uphptime\Support\ClockInterface;
 
 /**
  * Orchestrates one scheduled pass: closes finished rollups, prunes, then checks due sites within
- * budget, delegating to a peer when one is usable and falling back to a self-check otherwise
- * (a node with every peer currently circuit-broken by
- * reputation falls back the same way, since neither case leaves a candidate to pick). A peer Fail is
- * confirmed by a genuinely different peer (or a self-check, at exactly one usable peer) before it
- * ever reaches the state machine; an accepted Pass may separately be canary-sampled afterward.
- * SiteStateMachine is never aware of which path, or how many sub-checks, produced its CheckOutcome.
+ * budget, delegating to a peer when one is usable and falling back to a self-check otherwise.
  */
 final class CheckRunner
 {
@@ -118,8 +113,7 @@ final class CheckRunner
         $this->persistTransition($site, $newState, $result, $checkedAt, $source, $evidence, $attestation, $role, flagged: false, peer: $peer);
     }
 
-    // A check run by this node itself: the whole path with no usable peer, and the last resort when
-    // peers were tried but none returned a conclusive result.
+    // The whole path with no usable peer, and the last resort when peers were tried but inconclusive.
     private function checkLocally(Site $site, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $checker = $this->checkers[$site->checkType->value];
@@ -130,8 +124,7 @@ final class CheckRunner
             $result = CheckResult::error($exception->getMessage());
         }
 
-        // With local_failure_counts_as_down disabled, a connection-level failure with nobody to
-        // corroborate it is recorded as an error rather than downtime (it may be this node's network).
+        // With local_failure_counts_as_down disabled, an uncorroborated connection failure is an error, not downtime.
         if (!$this->config->localFailureCountsAsDown && $result->isUnverifiedNetworkFailure()) {
             $result = $result->asUnverifiedError();
         }
@@ -144,9 +137,7 @@ final class CheckRunner
         $checkedAt = $this->clock->now();
 
         if ($this->hasUsablePeer()) {
-            // Issued fresh once per check cycle, before the first contact, so a genuinely different
-            // confirmation/canary peer probing the same site within this cycle sees the same live
-            // token - a self-check never issues one, since there's no second party to attest to.
+            // Issued fresh per cycle so a confirmation/canary peer sees the same live token this cycle.
             if ($site->usesChallengeToken()) {
                 $this->challengeTokenStore->issue($site->id, $checkedAt, $this->config->challengeTokenTtlSeconds);
             }
@@ -164,8 +155,7 @@ final class CheckRunner
         $acquired = $this->peerResultAcquirer?->acquire($site, [], (float) $this->config->peerRequestTimeoutSeconds);
 
         if ($acquired === null || $acquired->result->outcome === CheckOutcome::Error) {
-            // No peer produced a conclusive result within max_delegates_per_acquisition attempts:
-            // fall back to checking from this node rather than recording an unmeasured cycle.
+            // No peer produced a conclusive result, so fall back rather than record an unmeasured cycle.
             $this->checkLocally($site, $checkedAt, $schedulingNow);
 
             return;
@@ -194,9 +184,7 @@ final class CheckRunner
         return $due;
     }
 
-    // Whether at least one peer is currently available to delegate to - excludes any peer the
-    // circuit breaker has excluded, which is what makes "every peer currently excluded" fall back to
-    // the self-check path exactly like "no peers configured" does.
+    // Whether at least one peer is available to delegate to, excluding any circuit-broken by reputation.
     private function hasUsablePeer(): bool
     {
         return $this->peerSelector !== null && $this->peerResultAcquirer !== null && $this->peerSelector->pick([]) !== null;
@@ -307,9 +295,7 @@ final class CheckRunner
         $this->applyResult($site, $result, $checkedAt, $schedulingNow, $source, $confirmation->evidence, $attestation, HistoryRecordRole::Confirmation, $confirmation->peer);
     }
 
-    // An accepted Pass is applied immediately and unconditionally; canary sampling is a separate,
-    // never-blocking integrity check on a result already acted on. Its records are appended only
-    // after the primary record, so a disagreement can flag the primary before it is ever written.
+    // An accepted Pass applies immediately; canary records append only after it, so a disagreement can flag it.
     private function resolvePass(Site $site, AcquiredPeerResult $primary, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $source   = $primary->source();

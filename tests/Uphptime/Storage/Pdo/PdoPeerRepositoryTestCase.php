@@ -41,8 +41,7 @@ abstract class PdoPeerRepositoryTestCase extends TestCase
 
     private PDO $pdo;
 
-    // The defining case: two processes replacing the SAME peer's keys concurrently must never leave
-    // a torn, half-replaced set - the transaction-wrapped delete-then-reinsert must always win whole.
+    // Two processes replacing the same peer's keys concurrently must never leave a torn, half-replaced set.
     public function testConcurrentSamePeerKeyReplacementNeverLeavesATornSet(): void
     {
         $repository = $this->repository();

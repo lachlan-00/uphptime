@@ -35,10 +35,8 @@ use Uphptime\Pinger\EgressPolicyInterface;
 use Uphptime\Pinger\PreferredIpSelector;
 
 /**
- * Implements IcmpClientInterface exactly like SystemPingClient, but resolves the host once, validates
- * the IP against the egress policy (no port check - ICMP has none), then pings the validated IP
- * directly rather than the hostname, so a second DNS lookup at ping time can't substitute a different
- * address.
+ * An IcmpClientInterface that resolves and egress-validates the host once, then pings that IP directly
+ * so a second DNS lookup at ping time can't substitute a different address.
  */
 final class SafeIcmpClient implements IcmpClientInterface
 {

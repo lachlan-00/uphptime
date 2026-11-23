@@ -80,8 +80,7 @@ final class JsonPeerRepository implements PeerRepositoryInterface
         return null;
     }
 
-    // readModifyWrite() holds one lock across the whole read-decide-write sequence, so two concurrent
-    // removes/saves can never race on a stale read (the lost-update bug a separate read()+write() has).
+    // readModifyWrite() holds one lock across the whole sequence, so concurrent writes can't race on a stale read.
     public function remove(string $id): void
     {
         $this->writer->readModifyWrite($this->path, function (?string $current) use ($id): string {

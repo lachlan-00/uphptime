@@ -40,9 +40,8 @@ use Uphptime\Site\CheckType;
 use Uphptime\Site\Site;
 
 /**
- * Runs a delegated check for an ephemeral, never-persisted site DTO, reusing the real milestone-1
- * checker classes verbatim, only wiring them to the egress-policy-enforcing Safe* clients instead of
- * CurlHttpClient/StreamTcpClient. Never touches a repository: a pinger stays stateless about sites.
+ * Runs a delegated check for an ephemeral, never-persisted site DTO, reusing the real checker classes
+ * wired to egress-policy-enforcing Safe* clients. Never touches a repository - a pinger stays stateless.
  */
 final class DelegatedCheckExecutor implements DelegatedCheckExecutorInterface
 {

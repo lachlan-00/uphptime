@@ -33,10 +33,8 @@ use Uphptime\Site\Site;
 use Uphptime\Support\AtomicWriter;
 
 /**
- * The single place a probe-and-cache-write ever happens, used by both the reactive request path and
- * the proactive cron: holds one exclusive lock, per fingerprint, across the whole "decide, then maybe
- * probe" sequence, so a concurrent caller for the same target always waits for whichever refresh is
- * already running instead of starting a redundant one.
+ * The single place a probe-and-cache-write happens, shared by the reactive path and the proactive
+ * cron: holds one lock per fingerprint, so a concurrent caller for the same target waits, never duplicates.
  */
 final class CacheRefresher
 {
@@ -48,13 +46,8 @@ final class CacheRefresher
     /**
      * @param callable(CheckCacheEntry, DateTimeImmutable): bool $isFreshCallback true = still fresh, no probe needed
      * @param callable(): DelegatedCheckOutcome $probeCallback
-     * @param DateTimeImmutable|null $requestedAt non-null bumps last_requested_at to this value (a
-     *        genuine request); null preserves whatever was already stored (a background cron refresh),
-     *        so idle eviction tracks real requests, not the cron's own activity.
-     * @param bool|null &$probedJustNow set to whether this call actually ran the probe callback - the
-     *        caller's own notion of "served from cache" must key off this, not off comparing
-     *        timestamps: two calls within the same wall-clock second (exactly the case this cache
-     *        exists to optimize for) would otherwise look identical whether served fresh or cached.
+     * @param DateTimeImmutable|null $requestedAt non-null bumps last_requested_at; null preserves the stored value
+     * @param bool|null &$probedJustNow true only if the probe callback actually ran this call
      * @param-out bool $probedJustNow
      */
     public function getOrRefresh(
@@ -91,9 +84,7 @@ final class CacheRefresher
                 $probedJustNow = true;
                 $outcome       = $probeCallback();
 
-                // An Error can stem from this specific caller's own egress policy (its own target
-                // allowlist, for instance), so it is never shared across callers - hand it back
-                // without persisting it, leaving whatever was already cached untouched.
+                // An Error can stem from this caller's own egress policy, so it's never shared - hand it back, don't persist it.
                 if ($outcome->result->outcome === CheckOutcome::Error) {
                     $resolved = CheckCacheEntry::transient($fingerprint, $site, $outcome, $now);
 

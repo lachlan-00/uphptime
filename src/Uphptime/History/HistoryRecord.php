@@ -32,9 +32,8 @@ use Uphptime\Site\CheckType;
 use Uphptime\Site\SiteState;
 
 /**
- * One JSONL line: a single check result, with the state transition it caused written alongside it.
- * `source` is "self" or "peer:<key_id>"; `evidence`/`attestation`/`role`/`flagged` all default to
- * null/"none"/Primary/false so an older-shaped line without them still parses unchanged.
+ * One JSONL line: a check result plus the state transition it caused. `source` is "self" or
+ * "peer:<key_id>"; optional fields default so an older-shaped line still parses unchanged.
  */
 final class HistoryRecord
 {

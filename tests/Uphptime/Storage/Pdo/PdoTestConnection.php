@@ -29,14 +29,11 @@ use PDO;
 use PDOException;
 
 /**
- * Fixed test-only credentials matching docs/examples/test-databases/docker-compose.yml, deliberately
- * not the application's own config - the app's config describes a real node's database, not these
- * throwaway test containers.
+ * Fixed test-only credentials matching docs/examples/test-databases/docker-compose.yml, not the application's own config.
  */
 final class PdoTestConnection
 {
-    // A failed attempt is cached per dialect for the rest of this process, so a whole test run only
-    // pays the connection timeout once per dialect rather than once per test method's setUp().
+    // A failed attempt is cached per dialect, so a run pays the connection timeout once, not once per setUp().
     /** @var array<string, bool> */
     private static array $knownUnreachable = [];
 

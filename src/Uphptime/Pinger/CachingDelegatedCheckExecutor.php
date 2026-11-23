@@ -36,9 +36,8 @@ use Uphptime\Site\Site;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Decorates a real executor with a TTL'd result cache: identical requests for the same check within
- * the TTL reuse the last probe instead of repeating it. Always honest about it - evidence timestamps
- * stay the original probe's, and the response says served_from_cache/cache_age_seconds explicitly.
+ * Decorates an executor with a TTL'd result cache: identical checks within the TTL reuse the last
+ * probe. Always honest about it - the response states served_from_cache/cache_age_seconds explicitly.
  */
 final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInterface
 {
@@ -97,8 +96,7 @@ final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInter
         }
     }
 
-    // Re-checks the calling peer's own target allowlist against the resolved IP a cache hit is about
-    // to serve - skipping the live probe also skips the allowlist check normally enforced inside it.
+    // Re-checks the calling peer's target allowlist against the resolved IP, since a cache hit skips the live probe's own check.
     private function isTargetStillAllowedForCaller(Site $site, ?Peer $callingPeer, CheckCacheEntry $entry): bool
     {
         if ($callingPeer === null || $callingPeer->targetAllowlist === []) {
@@ -116,9 +114,7 @@ final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInter
             return true;
         }
 
-        // Only isTargetAllowed() is used here, so the other three constructor args are irrelevant -
-        // block-range and port decisions are deterministic and were already enforced when this entry
-        // was written; only the per-peer allowlist can legitimately differ between two requesters.
+        // Only isTargetAllowed() is used here - block-range/port decisions were already enforced when this entry was written.
         $allowlist = new DefaultEgressPolicy([], [], [], $callingPeer->targetAllowlist);
 
         return $allowlist->isTargetAllowed($host, $resolvedIp);

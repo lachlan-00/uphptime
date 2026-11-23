@@ -100,8 +100,7 @@ final class UptimeReportCalculator
         $excluded    = 0;
         $selfSourced = 0;
 
-        // Confirmation/canary/tie-break records are supplementary audit trail for the same cycle as
-        // a primary record - only the primary outcome counts toward the uptime percentage.
+        // Only the primary outcome counts toward uptime; confirmation/canary/tie-break records are supplementary.
         $records = array_values(array_filter($records, static fn(HistoryRecord $record): bool => $record->role === HistoryRecordRole::Primary));
 
         foreach ($records as $record) {

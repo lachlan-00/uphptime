@@ -88,8 +88,7 @@ final class PdoPeerRepository implements PeerRepositoryInterface
         $this->execute('DELETE FROM peers WHERE id = ?', [$id]);
     }
 
-    // One transaction: upsert the peer row, then fully replace its keys and allowlist, so a
-    // concurrent reader (default READ COMMITTED on both engines) never sees a half-replaced key set.
+    // One transaction: upserts the peer row then fully replaces its keys/allowlist, so a concurrent reader never sees a half-replaced set.
     public function save(Peer $peer): void
     {
         try {

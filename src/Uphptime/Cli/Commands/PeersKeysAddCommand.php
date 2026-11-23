@@ -36,9 +36,7 @@ use Uphptime\Storage\PeerRepositoryInterface;
 use ValueError;
 
 /**
- * Adds one more key to an existing peer. Refuses a second active outbound key unless
- * --allow-multiple-outbound is passed, since Peer::outboundKey() only ever returns the first match -
- * peers:keys:rotate is the intended way to replace which key is actively used to sign.
+ * Adds one more key to an existing peer. Refuses a second active outbound key unless --allow-multiple-outbound is passed.
  */
 final class PeersKeysAddCommand implements CommandInterface
 {

@@ -31,9 +31,8 @@ use Uphptime\Cli\ConsoleOutputInterface;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Un-assigns one catalog schedule from a site - the catalog entry itself is untouched, and stays
- * assigned to any other site it was also assigned to. Not an error if it wasn't assigned, matching
- * MaintenanceRemoveCommand's idempotent-removal precedent.
+ * Un-assigns one catalog schedule from a site; the catalog entry itself is untouched.
+ * Not an error if it wasn't assigned.
  */
 final class MaintenanceScheduleUnassignCommand implements CommandInterface
 {

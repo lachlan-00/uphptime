@@ -80,9 +80,7 @@ final class CliApplication
         }
     }
 
-    // Grouped by the action name's prefix before its first ":", in the order commands were
-    // registered - every other command's output is JSON; this is the one deliberate exception,
-    // since it exists for a human reading a terminal, not a script parsing stdout.
+    // Grouped by the action name's prefix before its first ":"; plain text, the one deliberate exception to every other command's JSON output.
     private function renderHelp(): string
     {
         $groups = [];

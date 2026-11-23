@@ -26,9 +26,7 @@ declare(strict_types=1);
 namespace Uphptime\Support;
 
 /**
- * Resolves a config path that may be relative (to a node's own root) or already absolute (Unix,
- * Windows drive-letter, or UNC) - an admin running multiple nodes needs data_dir to be able to
- * point anywhere, not always under one compiled-in root.
+ * Resolves a config path that may be relative (to a node's own root) or already absolute (Unix, Windows, or UNC).
  */
 final class PathResolver
 {

@@ -28,9 +28,8 @@ namespace Uphptime\Pinger;
 use InvalidArgumentException;
 
 /**
- * An explicitly-allowed range always wins over the block list. A port allowlist always applies to
- * TCP checks; a non-empty per-peer target allowlist additionally restricts which hosts/IPs that
- * specific peer may ask this node to probe (empty means allow-all, the milestone-1-era default).
+ * An explicitly-allowed range always wins over the block list. A non-empty per-peer target allowlist
+ * further restricts which hosts/IPs that peer may ask this node to probe; empty means allow-all.
  */
 final class DefaultEgressPolicy implements EgressPolicyInterface
 {

@@ -35,9 +35,8 @@ use Uphptime\Site\MaintenanceWindow;
 use Uphptime\Storage\SiteRepositoryInterface;
 
 /**
- * Appends a one-off [start, end) maintenance window to a site. Local bookkeeping only - never sent to
- * peers, who keep checking as normal; the window only decides whether the owner's own resulting
- * history records get marked `excluded_by_maintenance`.
+ * Appends a one-off [start, end) maintenance window to a site. Local only; it just marks the
+ * owner's own resulting history records `excluded_by_maintenance` - peers keep checking as normal.
  */
 final class MaintenanceAddCommand implements CommandInterface
 {

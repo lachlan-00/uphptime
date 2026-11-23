@@ -30,8 +30,7 @@ use Uphptime\Site\Site;
 
 /**
  * Asks one peer to perform one check and returns its verified, signed result. Throws
- * DelegatedCheckFailedException for any non-response/invalid/unverifiable outcome; a verified
- * CheckOutcome::Error is still a valid DelegatedCheckResult, since the peer genuinely signed it.
+ * DelegatedCheckFailedException for any non-response/invalid/unverifiable outcome.
  */
 interface PeerCheckClientInterface
 {

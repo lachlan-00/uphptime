@@ -29,9 +29,8 @@ use PDO;
 use Uphptime\Config\Config;
 
 /**
- * Builds a connected PDO from config, resolving port 0 to the dialect's standard port so an existing
- * JSON-backend install needs zero new config keys. PostgreSQL's session timezone is pinned to UTC so
- * the same naive timestamp strings PdoTimestamp writes round-trip correctly on both engines.
+ * Builds a connected PDO from config, resolving port 0 to the dialect's standard port.
+ * PostgreSQL's session timezone is pinned to UTC so PdoTimestamp's naive strings round-trip on both engines.
  */
 final class PdoConnectionFactory
 {

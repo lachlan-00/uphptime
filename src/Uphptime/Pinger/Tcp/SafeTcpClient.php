@@ -34,9 +34,8 @@ use Uphptime\Pinger\EgressPolicyInterface;
 use Uphptime\Pinger\PreferredIpSelector;
 
 /**
- * Implements TcpClientInterface exactly like StreamTcpClient, but resolves the host once, validates
- * the IP and port against the egress policy, then connects to the validated IP directly rather than
- * the hostname, so a second DNS lookup at connect time can't substitute a different address.
+ * A TcpClientInterface that resolves and egress-validates the host once, then connects to that IP
+ * directly so a second DNS lookup at connect time can't substitute a different address.
  */
 final class SafeTcpClient implements TcpClientInterface
 {

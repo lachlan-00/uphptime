@@ -31,8 +31,7 @@ use Uphptime\Support\AtomicWriter;
 
 /**
  * One file per inbound key ID, under data/peer_runtime/nonces/<key_id>.json. Every call prunes
- * expired entries under the same exclusive lock it checks/inserts with, so the file self-bounds
- * with no separate GC job and there is no prune-then-check race.
+ * expired entries under the same exclusive lock it checks/inserts with, so the file self-bounds.
  */
 final class JsonNonceStore implements NonceStoreInterface
 {

@@ -34,10 +34,8 @@ use Uphptime\Storage\PeerReputationRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Tries up to a configured number of distinct peers (max_delegates_per_acquisition) for one
- * conclusive Pass or Fail. An Error reply settles nothing, so it is skipped like a non-response
- * (without a reputation penalty). A non-response records a bad reputation event and excludes that peer from the next attempt in this
- * same loop; the first valid response records a good event and is returned immediately.
+ * Tries up to max_delegates_per_acquisition distinct peers for one conclusive Pass or Fail.
+ * A non-response excludes that peer and tries the next; the first valid response wins.
  */
 final class PeerResultAcquirer
 {
@@ -72,14 +70,12 @@ final class PeerResultAcquirer
             }
 
             if ($delegated->result->outcome === CheckOutcome::Error) {
-                // A valid signed reply that settles nothing (e.g. the peer's egress policy refused
-                // the target) - the peer is fine, but another peer or a self-check may do better.
+                // A valid signed reply that settles nothing (e.g. an egress policy refusal) counts as a good peer response.
                 $this->recordEvent($peer->id, good: true);
                 continue;
             }
 
-            // The pinger's own self-reported `attestation` is never trusted - only the owner holds
-            // the real challenge token to compare against (see AttestationVerifier's own docblock).
+            // The pinger's self-reported `attestation` is never trusted; only the owner's real challenge token counts.
             $verdict = $this->attestationVerifier->verify($site, $delegated->result, $delegated->evidence);
             if (!$verdict->isValid) {
                 $this->recordEvent($peer->id, good: false);

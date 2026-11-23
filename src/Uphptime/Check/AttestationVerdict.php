@@ -26,9 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Check;
 
 /**
- * What AttestationVerifier decided about one delegated result: whether to accept it at all, and (if
- * accepted) the attestation level this specific result earned - recomputed owner-side every time,
- * never trusted from whatever the pinger itself claimed on the wire.
+ * What AttestationVerifier decided about one delegated result: whether to accept it, and if so, the
+ * attestation level it earned - recomputed owner-side, never trusted from the pinger's own claim.
  */
 final class AttestationVerdict
 {

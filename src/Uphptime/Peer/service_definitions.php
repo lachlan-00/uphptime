@@ -29,9 +29,7 @@ use Uphptime\Peer\PeerReputationScorer;
 use Uphptime\Peer\PeerSelector;
 use Uphptime\Peer\PeerSelectorInterface;
 
-// Peer and PeerKey are plain value objects with no services of their own; PeerRepositoryInterface
-// and PeerReputationRepositoryInterface are registered in Storage/service_definitions.php alongside
-// the other repositories. The peer-management CLI's own helper lives in Cli/service_definitions.php.
+// Peer/PeerKey are plain value objects; their repositories are registered in Storage/service_definitions.php.
 return [
     PeerReputationScorer::class => autowire(),
     PeerSelectorInterface::class => autowire(PeerSelector::class),

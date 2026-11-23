@@ -65,9 +65,7 @@ final class SystemNetworkStackTest extends TestCase
         self::assertFalse((new SystemNetworkStack($this->fixturePath))->hasIpv6Route());
     }
 
-    // The real /proc/net/if_inet6 on whatever machine runs this suite - proves the parser doesn't
-    // choke on it either way, without asserting a specific answer (this machine's own IPv6 state
-    // isn't something the test suite controls or should depend on).
+    // The real /proc/net/if_inet6, whatever it says - only proves the parser doesn't choke on it.
     public function testRealProcFileParsesWithoutError(): void
     {
         $stack = new SystemNetworkStack();

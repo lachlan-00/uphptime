@@ -388,14 +388,7 @@ final class CheckRunnerTest extends TestCase
 
     public function testNextDueAtStaysOnScheduleGridDespitePerRunLatency(): void
     {
-        // Reproduces the production drift: every run's processing (bootstrap, delegation,
-        // confirmation round-trips) takes a few real seconds, so each cron tick's "now" lands a
-        // little later than the nominal 5-minute mark. The old next_due_at = checked_at + interval
-        // formula baked that lag into the schedule every cycle; once the accumulated lag crept past
-        // the following tick's evaluation instant, that tick saw the site as not-yet-due and the
-        // check was silently skipped, halving the effective frequency. Anchoring to the site's
-        // previous scheduled slot instead must keep every tick on the original grid regardless of
-        // how much latency any individual run cost.
+        // Every tick's real processing time (bootstrap, delegation, confirmation) must never shift the site's fixed 5-minute grid.
         $clock = new FakeClock('2026-01-01T00:00:03+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
@@ -407,9 +400,7 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(1, $summary->checked, 'due at 00:00:00, 3 seconds of latency into this run');
         self::assertEquals(new DateTimeImmutable('2026-01-01T00:05:00+00:00'), $sites->find('a')->state->nextDueAt);
 
-        // The next tick fires nominally at 00:05:00 but this run only reaches the due-check 2 seconds
-        // in - under the old formula the site would still have been due at 00:05:03 and this tick
-        // would have found it not-yet-due and skipped it entirely.
+        // This tick fires 2 seconds early relative to the nominal 00:05:00 mark.
         $clock->advance('+4 minutes 59 seconds');
         $summary = $runner->run();
         self::assertSame(1, $summary->checked, 'must still be due on schedule, not skipped by the previous run\'s latency');

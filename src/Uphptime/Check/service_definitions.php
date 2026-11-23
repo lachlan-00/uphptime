@@ -56,8 +56,7 @@ use Uphptime\Support\ClockInterface;
 use Uphptime\Support\NetworkStackInterface;
 use Uphptime\Support\RandomInterface;
 
-// The self-check (owner) side only; the pinger side wires HttpChecker/HttpKeywordChecker/TcpChecker
-// itself with Safe* clients per request, inside Pinger\DelegatedCheckExecutor.
+// The self-check (owner) side only; Pinger\DelegatedCheckExecutor wires the pinger side's own checkers.
 return [
     AttestationVerifier::class => autowire(),
     CanarySampler::class => factory(static function (ContainerInterface $c): CanarySampler {

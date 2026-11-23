@@ -34,10 +34,8 @@ use Uphptime\Scheduling\RunBudget;
 use Uphptime\Support\ClockInterface;
 
 /**
- * The proactive cron: evicts idle-tracked targets outright, and re-probes everything else shortly
- * before it would expire so a reactive request almost always lands on an already-warm entry. Goes
- * through the same CacheRefresher as the reactive path, so it can never duplicate-probe a target a
- * concurrent request is already refreshing.
+ * The proactive cron: evicts idle-tracked targets, and re-probes the rest shortly before expiry so a
+ * reactive request lands warm. Shares CacheRefresher with the reactive path, so it never duplicate-probes.
  */
 final class CacheRefreshRunner
 {
@@ -97,9 +95,7 @@ final class CacheRefreshRunner
         return (int) round($this->clock->now()->format('U.u') * 1000);
     }
 
-    // requestedAt is left null here (never on the reactive path's behalf) so last_requested_at keeps
-    // reflecting genuine requests, not the cron's own activity - otherwise a popular-once target would
-    // never go idle no matter how long nobody has actually asked about it since.
+    // requestedAt stays null here so last_requested_at reflects genuine requests, never this cron's own activity.
     private function refresh(CheckCacheEntry $entry, DateTimeImmutable $now): void
     {
         $site = $entry->toSite();

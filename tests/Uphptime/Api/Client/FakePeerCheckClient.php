@@ -43,9 +43,7 @@ final class FakePeerCheckClient implements PeerCheckClientInterface
     private ?DelegatedCheckResult $result = null;
     private bool $shouldFail              = false;
 
-    // Scripts a distinct outcome per peer id, keyed the same way Peer::id is stored; a null value
-    // scripts that specific peer as non-responsive (throws), letting one test exercise a multi-peer
-    // scenario (confirmation, canary, a mix of responsive and unresponsive peers) deterministically.
+    // Scripts a distinct outcome per peer id; a null value scripts that peer as non-responsive (throws).
     /** @param array<string, DelegatedCheckResult|null> $resultsByPeerId */
     public static function byPeerId(array $resultsByPeerId): self
     {

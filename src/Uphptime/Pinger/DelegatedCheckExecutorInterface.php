@@ -29,9 +29,8 @@ use Uphptime\Peer\Peer;
 use Uphptime\Site\Site;
 
 /**
- * Runs one delegated check for an ephemeral site description. A null $callingPeer means a
- * background/cron-triggered probe with no specific requester, so only the global egress policy
- * applies - no peer-specific target allowlist narrows it.
+ * Runs one delegated check for an ephemeral site description. A null $callingPeer means a background
+ * probe with no requester, so only the global egress policy applies, not a peer-specific allowlist.
  */
 interface DelegatedCheckExecutorInterface
 {

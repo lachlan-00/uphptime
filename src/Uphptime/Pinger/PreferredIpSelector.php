@@ -28,12 +28,8 @@ namespace Uphptime\Pinger;
 use Uphptime\Support\NetworkStackInterface;
 
 /**
- * Picks which of DnsResolverInterface::resolve()'s IPs to actually use: the Safe* clients previously
- * always took $ips[0], with no family preference at all - a dual-stack target whose AAAA record
- * happened to come back first would get pinned to an address this node can't reach whenever it has no
- * real IPv6 route, failing a check that would have passed over IPv4. When there's no IPv6 route, the
- * first IPv4 address is preferred; otherwise (or if nothing is IPv4) the first address wins, same as
- * before.
+ * Picks which of DnsResolverInterface::resolve()'s IPs to use: the first IPv4 address when this node
+ * has no IPv6 route, otherwise (or if none is IPv4) the first address in the list.
  */
 final class PreferredIpSelector
 {

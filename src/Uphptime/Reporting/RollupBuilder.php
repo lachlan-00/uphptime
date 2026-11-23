@@ -68,8 +68,7 @@ final class RollupBuilder
 
     private function buildRollup(string $siteId, string $date): DailyRollup
     {
-        // Confirmation/canary/tie-break records are supplementary audit trail for the same cycle as
-        // a primary record - only the primary outcome counts toward a cycle's measured result.
+        // Only the primary outcome counts; confirmation/canary/tie-break records are supplementary.
         $records = array_values(array_filter(
             $this->historyRepository->readDay($siteId, $date),
             static fn(HistoryRecord $record): bool => $record->role === HistoryRecordRole::Primary,

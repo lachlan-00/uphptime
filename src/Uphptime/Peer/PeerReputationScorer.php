@@ -29,10 +29,8 @@ use DateTimeImmutable;
 use Uphptime\Config\Config;
 
 /**
- * Moves a peer's score with a bounded EWMA (score = score + alpha * (target - score)), and decides
- * circuit-breaker exclusion/recovery. Confirmation disagreement is the gentlest event (a plain Fail
- * vs Pass between two peers about a live target is the routine case confirmation exists to produce,
- * so it must never alone drive exclusion); a tie-break-confirmed false pass is the harshest.
+ * Moves a peer's score with a bounded EWMA and decides circuit-breaker exclusion/recovery.
+ * Confirmation disagreement is the gentlest event; a tie-break-confirmed false pass is the harshest.
  */
 final class PeerReputationScorer
 {
@@ -94,8 +92,7 @@ final class PeerReputationScorer
         return $reputation->withExclusion($now->modify(sprintf('+%d seconds', $cooldownSeconds)), $consecutive);
     }
 
-    // A cooldown that has just elapsed lands on probation, not neutral, so one more good response
-    // clears it comfortably while one more bad response re-excludes it and lengthens the next cooldown.
+    // A just-elapsed cooldown lands on probation, not neutral, so one more good or bad response decides it quickly.
     private function recoverIfCooldownElapsed(PeerReputation $reputation, DateTimeImmutable $now): PeerReputation
     {
         if ($reputation->excludedUntil === null || $reputation->excludedUntil > $now) {

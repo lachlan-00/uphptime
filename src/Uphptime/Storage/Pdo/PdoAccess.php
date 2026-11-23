@@ -29,10 +29,8 @@ use PDO;
 use PDOException;
 
 /**
- * Shared query/execute helpers for the Pdo*Repository classes, each of which constructor-injects its
- * own `private readonly PDO $pdo` property that these methods read via $this. query()/execute()
- * translate a missing-table PDOException via PdoExceptionTranslator; rawQuery()/rawExecute() let a
- * transaction-wrapped caller handle rollback itself before translating.
+ * Shared query/execute helpers for Pdo*Repository classes, reading the using class's own `$pdo` property.
+ * query()/execute() translate a missing-table PDOException; rawQuery()/rawExecute() let a transaction-wrapped caller roll back first.
  *
  * @property-read PDO $pdo the using class's own constructor-injected connection
  */

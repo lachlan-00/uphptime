@@ -56,8 +56,7 @@ final class HmacSignerTest extends TestCase
         $canonical = 'canonical';
         $signature = $signer->sign($canonical, 'secret');
 
-        // A signature that merely differs in case must still fail even though some naive
-        // comparisons (e.g. a loose string match) could be fooled by encoding quirks.
+        // A signature differing only in case must still fail, even though a loose string comparison could be fooled.
         self::assertFalse($signer->verify($canonical, 'secret', strtoupper($signature)));
     }
 

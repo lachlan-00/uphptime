@@ -41,8 +41,7 @@ use Uphptime\Tests\Support\TwoNodeHarness;
 
 /**
  * The full chain over real sockets: owner (in-process) -> spawned pinger (real public/index.php) ->
- * spawned "monitored site". Only the owner's own role is collapsed in-process, matching what it
- * actually is in production (a cron-invoked CLI, never a server).
+ * spawned "monitored site". Only the owner's role is collapsed in-process, as it is in production.
  */
 final class TwoNodeDelegatedPingIntegrationTest extends TestCase
 {
@@ -85,11 +84,7 @@ final class TwoNodeDelegatedPingIntegrationTest extends TestCase
         self::assertSame(SiteState::Up, $updated->state->status);
     }
 
-    // With the monitored site also unreachable, the self-check fallback fails too; with the default
-    // local_failure_counts_as_down = true this is a genuine, state-mutating failure rather than an
-    // unverified error (CheckRunnerTest::testUnresponsivePeerThenFailingSelfCheckRecordsFailureWhenLocalFailureCountsAsDown).
-    // A test-local site server is used (rather than the shared static one) so this test can stop it
-    // without affecting any other test's ordering.
+    // Uses a test-local site server (not the shared static one) so it can be stopped without affecting other tests.
     public function testPingerAndSiteBothDownRecordsAFailureViaTheSelfCheckFallback(): void
     {
         $docRoot = sys_get_temp_dir() . '/uphptime-monitored-site-' . bin2hex(random_bytes(4));
@@ -123,11 +118,7 @@ final class TwoNodeDelegatedPingIntegrationTest extends TestCase
         }
     }
 
-    // Since the "patch downtime a bit better" change, an unresponsive peer is no longer the final
-    // word: the owner falls back to checking the site itself rather than recording an unmeasured
-    // cycle (see CheckRunner::checkOneViaPeer). The monitored site is still genuinely up here, so
-    // that self-check succeeds and the state machine moves on the result, same as CheckRunnerTest's
-    // testUnresponsivePeerFallsBackToASelfCheck covers at the unit level.
+    // An unresponsive peer falls back to a self-check rather than recording an unmeasured cycle; the site is genuinely up here.
     public function testPingerDownFallsBackToASelfCheckAgainstTheStillUpSite(): void
     {
         $container         = $this->harness->ownerContainer();

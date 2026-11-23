@@ -37,11 +37,8 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\AtomicWriter;
 
 /**
- * Re-partitions JSONL history files from UTC-dated files to the configured timezone-dated files
- * and deletes rollups so they are rebuilt from the corrected history on the next check:run.
- *
- * For PDO backends, no data migration is needed — the stored timestamps are precise. Only the
- * dayBounds query must use the configured timezone (fixed separately in PdoHistoryRepository).
+ * Re-partitions JSONL history from UTC-dated files to the configured timezone and deletes rollups
+ * so they rebuild from the corrected history on the next check:run. A no-op for PDO backends.
  */
 final class StorageMigrateTimezoneCommand implements CommandInterface
 {
@@ -240,8 +237,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
             // Delete the old UTC-dated files that are no longer needed.
             foreach ($files as $utcDate => $filePath) {
                 $newPath = $siteHistoryDir . '/' . $utcDate . '.jsonl';
-                // Only delete if the UTC date file is different from where records ended up.
-                // If all records from this UTC date stayed in the same file, keep it.
+                // Only delete if every record from this UTC date moved to a different file.
                 $stillNeeded = false;
                 foreach ($allRecords as $targetDate => $records) {
                     if ($targetDate === $utcDate) {

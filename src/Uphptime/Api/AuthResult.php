@@ -29,9 +29,8 @@ use Uphptime\Peer\Peer;
 use Uphptime\Peer\PeerKey;
 
 /**
- * The outcome of HmacAuthMiddleware's verification. $rateLimited distinguishes the one non-secret
- * failure (429) from every auth failure, which the middleware answers with an identical 401 body
- * regardless of which check failed.
+ * The outcome of HmacAuthMiddleware's verification. $rateLimited marks the one non-secret failure
+ * (429); every other failure gets an identical 401 body regardless of which check failed.
  */
 final class AuthResult
 {

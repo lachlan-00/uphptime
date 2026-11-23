@@ -36,11 +36,8 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Deliberately unauthenticated (result attestation Layer 1): exposes the current challenge token for
- * one site, so an admin's own web server config can relay it onto the monitored site itself (as a
- * response header or at /.well-known/uphptime) - the exact "small... endpoint that the owner's node
- * writes" ARCHITECTURE.md describes. Knowing the token proves nothing on its own; it's only useful
- * once it appears on the probed site, which is what the signed, verified result actually attests to.
+ * Deliberately unauthenticated: exposes the current challenge token for one site so the owner's own
+ * web server can relay it onto the monitored site itself; knowing the token proves nothing by itself.
  */
 final class ChallengeTokenAction implements ActionInterface
 {

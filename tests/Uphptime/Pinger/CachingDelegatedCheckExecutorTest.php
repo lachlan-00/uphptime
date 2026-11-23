@@ -75,8 +75,7 @@ final class CachingDelegatedCheckExecutorTest extends TestCase
         self::assertSame(10, $second->cacheAgeSeconds);
     }
 
-    // The security property this whole design is built around: a cache primed by an unrestricted
-    // peer must not be handed to a different, more-restrictive peer whose own allowlist denies it.
+    // A cache primed by an unrestricted peer must not be handed to a more-restrictive peer whose own allowlist denies it.
     public function testMoreRestrictivePeerIsDeniedACacheHitAnUnrestrictedPeerPopulated(): void
     {
         $clock    = new FakeClock();
@@ -94,9 +93,7 @@ final class CachingDelegatedCheckExecutorTest extends TestCase
         self::assertSame(CheckOutcome::Error, $second->result->outcome, 'the restricted peer must not receive the cached result');
     }
 
-    // Regression: two calls within the same wall-clock second must not be misread as "not from
-    // cache" just because probedAt and now share the same integer timestamp - hit detection must
-    // key off whether a probe actually ran, not off comparing timestamps.
+    // Cache-hit detection keys off whether a probe actually ran, never off comparing timestamps.
     public function testTwoCallsWithinTheSameInstantStillDetectTheSecondAsACacheHit(): void
     {
         $clock    = new FakeClock();

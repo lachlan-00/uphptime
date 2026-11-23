@@ -28,10 +28,7 @@ namespace Uphptime\Tests\Support;
 use Uphptime\Support\RandomInterface;
 
 /**
- * A scripted RandomInterface double. Defaults to a probability of 1.0 (never below any sample rate,
- * so sampling never fires unless a test deliberately sets a lower probability) and always picks
- * index 0 (the first eligible candidate in list order), so a multi-peer scenario is fully
- * deterministic: excluding the previously-tried peer always surfaces the next one in save order.
+ * A scripted RandomInterface double: defaults to probability 1.0 (sampling never fires) and always picks index 0.
  */
 final class FakeRandom implements RandomInterface
 {

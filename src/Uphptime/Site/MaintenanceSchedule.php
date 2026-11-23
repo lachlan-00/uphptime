@@ -29,13 +29,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * A recurring "don't count this against uptime" window, evaluated in its own timezone rather than
- * the node's - "every N hour(s)/day(s)/week(s)/month(s)", same shape as a cloud console's
- * maintenance-window picker (start date/time/timezone, window length, repeat-every-N-unit, and for
- * weekly repeats, which day it lands on). A standalone catalog entry (not embedded on a Site), so it
- * can be defined once and assigned to many sites via Site::$scheduleIds - see
- * MaintenanceScheduleRepositoryInterface. Local bookkeeping only, same as MaintenanceWindow: never
- * announced to peers, who keep checking as normal while it is active.
+ * A recurring "don't count this against uptime" window, evaluated in its own timezone. A standalone
+ * catalog entry assignable to many sites via Site::$scheduleIds; local bookkeeping, never announced to peers.
  */
 final class MaintenanceSchedule
 {
@@ -50,16 +45,14 @@ final class MaintenanceSchedule
         public readonly string $timezone,
         public readonly int $repeatEvery,
         public readonly MaintenanceRepeatUnit $repeatUnit,
-        // Only meaningful when $repeatUnit is Week: ISO-8601 day of week (1 = Monday ... 7 = Sunday)
-        // each occurrence lands on. Defaults to $startsAt's own weekday when null.
+        // ISO-8601 day of week (1=Mon..7=Sun) for Week repeats; null defaults to startsAt's own weekday.
         public readonly ?int $repeatDayOfWeek,
         // Date (in $timezone) after which no further occurrences happen; null = repeats forever.
         public readonly ?DateTimeImmutable $endsOn,
         public readonly ?string $note,
     ) {}
 
-    // Whether $when (any timezone) falls inside the occurrence of this schedule current at that
-    // moment, evaluated against the schedule's own timezone rather than the caller's.
+    // Whether $when falls inside the current occurrence, evaluated in the schedule's own timezone.
     public function isActiveAt(DateTimeImmutable $when): bool
     {
         if (!$this->enabled) {
@@ -90,8 +83,7 @@ final class MaintenanceSchedule
             + ((int) $local->format('n') - (int) $start->format('n'));
         $periodsAgo = intdiv($monthsElapsed, $this->repeatEvery);
 
-        // Walk outward from the nearest guess until we find the latest occurrence at or before
-        // $local - calendar-month arithmetic isn't exact modular arithmetic (months vary in length).
+        // Walks outward from the nearest guess, since calendar months vary in length.
         for ($attempt = $periodsAgo + 1; $attempt >= $periodsAgo - 1; $attempt--) {
             $candidate = $start->modify(sprintf('%+d months', $attempt * $this->repeatEvery));
             if ($candidate <= $local) {
@@ -102,9 +94,7 @@ final class MaintenanceSchedule
         return null;
     }
 
-    // The latest occurrence start at or before $local, for the matching repeat unit. Fixed-length
-    // units (hour/day/week) use timestamp arithmetic; Month uses calendar-month arithmetic since
-    // months vary in length.
+    // The latest occurrence start at or before $local; Month uses calendar arithmetic, other units use timestamps.
     private function occurrenceStartAtOrBefore(DateTimeImmutable $start, DateTimeImmutable $local): ?DateTimeImmutable
     {
         if ($this->repeatUnit === MaintenanceRepeatUnit::Month) {

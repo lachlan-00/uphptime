@@ -29,9 +29,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * One naive 'Y-m-d H:i:s.u' format shared by every repository, always UTC - MySQL's DATETIME has no
- * timezone concept at all, and PdoConnectionFactory sets PostgreSQL's session timezone to UTC, so the
- * same naive string round-trips correctly on both engines without any dialect-specific formatting.
+ * One naive 'Y-m-d H:i:s.u' format shared by every repository, always UTC.
+ * MySQL's DATETIME has no timezone concept, and PostgreSQL's session timezone is pinned to UTC, so the same string round-trips on both.
  */
 final class PdoTimestamp
 {

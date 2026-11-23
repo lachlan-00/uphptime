@@ -36,10 +36,7 @@ use Uphptime\Support\ClockInterface;
 
 /**
  * Confirms a primary Fail via a genuinely different peer before anything reaches the state machine.
- * With no different peer available, or none that returns a conclusive answer within the attempt
- * cap, a self-check stands in as the confirmer (the same vantage-point trade-off milestone 1's
- * zero-peer fallback already makes). An Error confirming reply settles
- * nothing, so it is treated like a non-response: keep trying another peer.
+ * With no different peer available, or none conclusive within the attempt cap, a self-check stands in.
  */
 final class DownConfirmer
 {
@@ -98,9 +95,7 @@ final class DownConfirmer
                 return ConfirmationOutcome::resolved($delegated->result, 'peer:' . $delegated->verifiedKeyId, $delegated->evidence, $verdict->attestation, $peer);
             }
 
-            // Disagreement: the confirming peer passed where the primary failed. Routine and
-            // expected - this is exactly what confirmation exists to surface - so it is scored
-            // gently and never alone drives either peer toward exclusion.
+            // Disagreement is routine - exactly what confirmation surfaces - so it is scored gently.
             $this->recordDisagreement((string) $primary->peer?->id);
             $this->recordDisagreement($peer->id);
 
@@ -111,9 +106,7 @@ final class DownConfirmer
         return $this->confirmBySelfCheck($site);
     }
 
-    // The primary peer already reported a failure from its own vantage point, so a local check that
-    // cannot connect is independent corroboration - not an unverifiable local network problem.
-    // Only a local Error (nothing could be measured) leaves the failure unconfirmed.
+    // A local check that can't connect corroborates the primary's own failure, not a network problem.
     private function confirmBySelfCheck(Site $site): ConfirmationOutcome
     {
         $result = $this->selfCheck($site);

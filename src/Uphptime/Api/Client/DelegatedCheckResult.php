@@ -29,8 +29,7 @@ use Uphptime\Check\CheckResult;
 
 /**
  * A verified, signed result from a delegated peer call, plus the key ID that signed it (the wire
- * identity, never the peer's local label). servedFromCache/cacheAgeSeconds default to the
- * always-fresh milestone-2 values; a peer's pinger cache is the only producer of a cached one.
+ * identity, never the peer's local label). A peer's pinger cache is the only producer of a cached one.
  */
 final class DelegatedCheckResult
 {

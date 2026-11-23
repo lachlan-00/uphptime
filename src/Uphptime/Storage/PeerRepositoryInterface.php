@@ -37,8 +37,7 @@ interface PeerRepositoryInterface
     /** @return Peer[] */
     public function all(): array;
 
-    // Every peer this node may delegate checks to by config (enabled, allows outbound, has a base URL
-    // and an active key) - reputation-based exclusion is a separate, selection-time concern.
+    // Every peer this node may delegate to by config; reputation-based exclusion is a separate, selection-time concern.
     /** @return Peer[] */
     public function enabledForDelegation(): array;
 

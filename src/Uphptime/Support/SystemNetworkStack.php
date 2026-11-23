@@ -26,13 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Support;
 
 /**
- * Reads /proc/net/if_inet6 (Linux-only, matching this project's existing ICMP scope) rather than
- * probing a specific external address: a container on an isolated bridge network can have a real
- * default route yet still fail to reach any one given IPv6 destination, and a probe to a single
- * hardcoded address was confirmed, while testing this, to give false negatives on a host that
- * genuinely did have working IPv6 - this only asks "is any real address configured at all," which
- * doesn't depend on any address being reachable. Unreadable/missing/non-Linux all fail safe to false:
- * assuming no IPv6 just means always preferring IPv4 when available, never the reverse.
+ * Reads /proc/net/if_inet6 (Linux-only) rather than probing an address, since only an interface check is reliable on an isolated bridge network.
+ * Unreadable/missing/non-Linux fail safe to false, so a missing read just means preferring IPv4 when available.
  */
 final class SystemNetworkStack implements NetworkStackInterface
 {

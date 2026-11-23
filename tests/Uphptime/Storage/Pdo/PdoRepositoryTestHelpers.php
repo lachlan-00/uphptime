@@ -31,9 +31,8 @@ use Uphptime\Storage\Pdo\PostgreSqlDialect;
 use Uphptime\Storage\Pdo\SqlDialect;
 
 /**
- * Schema install/truncate shared by every Pdo*RepositoryTestCase - attempt() returns null (the
- * container isn't reachable) rather than throwing, so a caller can markTestSkipped() instead of
- * failing the suite.
+ * Schema install/truncate shared by every Pdo*RepositoryTestCase - unreachable returns null so a
+ * caller can markTestSkipped() instead of failing.
  */
 trait PdoRepositoryTestHelpers
 {

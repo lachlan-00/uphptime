@@ -26,9 +26,8 @@ declare(strict_types=1);
 namespace Uphptime\Pinger\Cache;
 
 /**
- * Plain read/list/delete access to the tracked cache entries, used for eviction bookkeeping. The
- * locked probe-or-serve decision itself lives in CacheRefresher, not here - a "repository save" would
- * re-open the TOCTOU gap the whole cache design exists to close.
+ * Plain read/list/delete access to tracked cache entries, for eviction bookkeeping. The locked
+ * probe-or-serve decision lives in CacheRefresher, not here - a save() here would reopen a TOCTOU gap.
  */
 interface CheckCacheRepositoryInterface
 {

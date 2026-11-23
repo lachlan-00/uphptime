@@ -53,8 +53,7 @@ final class Site
         public readonly array $maintenanceWindows = [],
         public readonly ?ChallengeDelivery $challengeDelivery = null,
         public readonly array $groups = [],
-        // Ids into the standalone MaintenanceSchedule catalog (MaintenanceScheduleRepositoryInterface)
-        // this site is assigned to - a schedule is defined once and shared across many sites.
+        // Ids into the standalone MaintenanceSchedule catalog this site is assigned to.
         public readonly array $scheduleIds = [],
     ) {}
 
@@ -64,11 +63,8 @@ final class Site
         return $this->checkIntervalSeconds ?? $defaultIntervalSeconds;
     }
 
-    // Whether $when falls inside any of this site's currently configured one-off windows, or any
-    // occurrence of a recurring schedule it's assigned to (each evaluated in its own timezone).
-    // $schedules is the catalog to check against - typically the whole MaintenanceScheduleRepositoryInterface::all(),
-    // since this filters to $this->scheduleIds itself, so callers never need to resolve a subset.
-    /** @param MaintenanceSchedule[] $schedules */
+    // Whether $when falls inside a one-off window or a recurring schedule this site is assigned to.
+    /** @param MaintenanceSchedule[] $schedules the full catalog; this filters to $this->scheduleIds itself */
     public function isUnderMaintenanceAt(DateTimeImmutable $when, array $schedules = []): bool
     {
         foreach ($this->maintenanceWindows as $window) {

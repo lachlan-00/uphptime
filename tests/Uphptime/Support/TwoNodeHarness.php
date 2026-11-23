@@ -35,9 +35,7 @@ use Uphptime\Support\AtomicWriter;
 
 /**
  * Two isolated uphptime node trees sharing one HMAC key: node B's pinger is a real spawned
- * `public/index.php` process (so the real HTTP/Slim/PSR-15/curl stack is exercised); node A, the
- * owner, is driven in-process via its own DicBuilder container, since in production it is just a
- * cron-invoked CLI, never a server.
+ * `public/index.php` process; node A (the owner) is driven in-process via its own DicBuilder container.
  */
 final class TwoNodeHarness
 {
