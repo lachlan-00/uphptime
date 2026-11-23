@@ -40,6 +40,23 @@ use Uphptime\Tests\Storage\InMemorySiteRepository;
 
 final class MaintenanceScheduleListCommandTest extends TestCase
 {
+    public function testFiltersByScheduleId(): void
+    {
+        $schedules = new InMemoryMaintenanceScheduleRepository();
+        $sites     = new InMemorySiteRepository();
+
+        $schedules->save($this->schedule('sched-1'));
+        $schedules->save($this->schedule('sched-2'));
+
+        $output   = new FakeConsoleOutput();
+        $exitCode = (new MaintenanceScheduleListCommand($schedules, $sites, $output))->run(['--schedule-id=sched-2']);
+
+        self::assertSame(0, $exitCode);
+        $decoded = $output->lastLineDecoded();
+        self::assertCount(1, $decoded['schedules']);
+        self::assertSame('sched-2', $decoded['schedules'][0]['id']);
+    }
+
     public function testListsCatalogSchedulesWithTheirAssignedSites(): void
     {
         $schedules = new InMemoryMaintenanceScheduleRepository();
@@ -87,23 +104,6 @@ final class MaintenanceScheduleListCommandTest extends TestCase
         self::assertSame('week', $decoded['schedules'][0]['repeat_unit']);
         self::assertSame(7, $decoded['schedules'][0]['repeat_day_of_week']);
         self::assertSame(['site-a'], $decoded['schedules'][0]['assigned_site_ids']);
-    }
-
-    public function testFiltersByScheduleId(): void
-    {
-        $schedules = new InMemoryMaintenanceScheduleRepository();
-        $sites     = new InMemorySiteRepository();
-
-        $schedules->save($this->schedule('sched-1'));
-        $schedules->save($this->schedule('sched-2'));
-
-        $output   = new FakeConsoleOutput();
-        $exitCode = (new MaintenanceScheduleListCommand($schedules, $sites, $output))->run(['--schedule-id=sched-2']);
-
-        self::assertSame(0, $exitCode);
-        $decoded = $output->lastLineDecoded();
-        self::assertCount(1, $decoded['schedules']);
-        self::assertSame('sched-2', $decoded['schedules'][0]['id']);
     }
 
     public function testUnknownSiteFailsWithNonZeroExit(): void

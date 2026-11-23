@@ -58,6 +58,24 @@ final class MaintenanceScheduleAddCommand implements CommandInterface
         private readonly ConsoleOutputInterface $output,
     ) {}
 
+    /** @return array<string, mixed> */
+    public static function scheduleToArray(MaintenanceSchedule $schedule): array
+    {
+        return [
+            'id' => $schedule->id,
+            'name' => $schedule->name,
+            'enabled' => $schedule->enabled,
+            'starts_at' => $schedule->startsAt->format(DateTimeInterface::ATOM),
+            'duration_minutes' => $schedule->durationMinutes,
+            'timezone' => $schedule->timezone,
+            'repeat_every' => $schedule->repeatEvery,
+            'repeat_unit' => $schedule->repeatUnit->value,
+            'repeat_day_of_week' => $schedule->repeatDayOfWeek,
+            'ends_on' => $schedule->endsOn?->format(DateTimeInterface::ATOM),
+            'note' => $schedule->note,
+        ];
+    }
+
     public function run(array $args): int
     {
         $options  = ArgvOptions::parse($args);
@@ -164,24 +182,6 @@ final class MaintenanceScheduleAddCommand implements CommandInterface
         ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 
         return 0;
-    }
-
-    /** @return array<string, mixed> */
-    public static function scheduleToArray(MaintenanceSchedule $schedule): array
-    {
-        return [
-            'id' => $schedule->id,
-            'name' => $schedule->name,
-            'enabled' => $schedule->enabled,
-            'starts_at' => $schedule->startsAt->format(DateTimeInterface::ATOM),
-            'duration_minutes' => $schedule->durationMinutes,
-            'timezone' => $schedule->timezone,
-            'repeat_every' => $schedule->repeatEvery,
-            'repeat_unit' => $schedule->repeatUnit->value,
-            'repeat_day_of_week' => $schedule->repeatDayOfWeek,
-            'ends_on' => $schedule->endsOn?->format(DateTimeInterface::ATOM),
-            'note' => $schedule->note,
-        ];
     }
 
     private function resolveDayOfWeek(string $dayInput): ?int

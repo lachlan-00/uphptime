@@ -82,7 +82,7 @@ final class JsonMaintenanceScheduleRepository implements MaintenanceScheduleRepo
 
             foreach ($schedules as $index => $existing) {
                 if ($existing['id'] === $schedule->id) {
-                    $schedules[$index] = $this->scheduleToArray($schedule);
+                    $schedules[$index]  = $this->scheduleToArray($schedule);
                     $found              = true;
                     break;
                 }
@@ -132,24 +132,6 @@ final class JsonMaintenanceScheduleRepository implements MaintenanceScheduleRepo
         );
     }
 
-    /** @return array<string, mixed> */
-    private function scheduleToArray(MaintenanceSchedule $schedule): array
-    {
-        return [
-            'id' => $schedule->id,
-            'name' => $schedule->name,
-            'enabled' => $schedule->enabled,
-            'starts_at' => $schedule->startsAt->format(DateTimeInterface::ATOM),
-            'duration_minutes' => $schedule->durationMinutes,
-            'timezone' => $schedule->timezone,
-            'repeat_every' => $schedule->repeatEvery,
-            'repeat_unit' => $schedule->repeatUnit->value,
-            'repeat_day_of_week' => $schedule->repeatDayOfWeek,
-            'ends_on' => $schedule->endsOn?->format(DateTimeInterface::ATOM),
-            'note' => $schedule->note,
-        ];
-    }
-
     /**
      * @param array<string, mixed> $data
      * @return array<int, array<string, mixed>>
@@ -169,5 +151,23 @@ final class JsonMaintenanceScheduleRepository implements MaintenanceScheduleRepo
         }
 
         return $schedules;
+    }
+
+    /** @return array<string, mixed> */
+    private function scheduleToArray(MaintenanceSchedule $schedule): array
+    {
+        return [
+            'id' => $schedule->id,
+            'name' => $schedule->name,
+            'enabled' => $schedule->enabled,
+            'starts_at' => $schedule->startsAt->format(DateTimeInterface::ATOM),
+            'duration_minutes' => $schedule->durationMinutes,
+            'timezone' => $schedule->timezone,
+            'repeat_every' => $schedule->repeatEvery,
+            'repeat_unit' => $schedule->repeatUnit->value,
+            'repeat_day_of_week' => $schedule->repeatDayOfWeek,
+            'ends_on' => $schedule->endsOn?->format(DateTimeInterface::ATOM),
+            'note' => $schedule->note,
+        ];
     }
 }

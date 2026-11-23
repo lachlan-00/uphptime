@@ -40,6 +40,17 @@ use Uphptime\Tests\Storage\InMemorySiteRepository;
 
 final class MaintenanceScheduleAssignCommandTest extends TestCase
 {
+    public function testAssigningTwiceIsIdempotent(): void
+    {
+        [$sites, $schedules] = $this->sitesAndSchedules();
+        $command             = new MaintenanceScheduleAssignCommand($sites, $schedules, new FakeConsoleOutput());
+
+        $command->run(['--site=site-a', '--schedule-id=sched-1']);
+        $command->run(['--site=site-a', '--schedule-id=sched-1']);
+
+        self::assertSame(['sched-1'], $sites->find('site-a')?->scheduleIds);
+    }
+
     public function testAssignsACatalogScheduleToASite(): void
     {
         [$sites, $schedules] = $this->sitesAndSchedules();
@@ -53,21 +64,10 @@ final class MaintenanceScheduleAssignCommandTest extends TestCase
         self::assertSame(['sched-1'], $sites->find('site-a')?->scheduleIds);
     }
 
-    public function testAssigningTwiceIsIdempotent(): void
-    {
-        [$sites, $schedules] = $this->sitesAndSchedules();
-        $command = new MaintenanceScheduleAssignCommand($sites, $schedules, new FakeConsoleOutput());
-
-        $command->run(['--site=site-a', '--schedule-id=sched-1']);
-        $command->run(['--site=site-a', '--schedule-id=sched-1']);
-
-        self::assertSame(['sched-1'], $sites->find('site-a')?->scheduleIds);
-    }
-
     public function testUnknownScheduleFailsWithNonZeroExit(): void
     {
         [$sites, $schedules] = $this->sitesAndSchedules();
-        $command = new MaintenanceScheduleAssignCommand($sites, $schedules, new FakeConsoleOutput());
+        $command             = new MaintenanceScheduleAssignCommand($sites, $schedules, new FakeConsoleOutput());
 
         $exitCode = $command->run(['--site=site-a', '--schedule-id=missing']);
 
@@ -78,7 +78,7 @@ final class MaintenanceScheduleAssignCommandTest extends TestCase
     public function testUnknownSiteFailsWithNonZeroExit(): void
     {
         [, $schedules] = $this->sitesAndSchedules();
-        $command = new MaintenanceScheduleAssignCommand(new InMemorySiteRepository(), $schedules, new FakeConsoleOutput());
+        $command       = new MaintenanceScheduleAssignCommand(new InMemorySiteRepository(), $schedules, new FakeConsoleOutput());
 
         $exitCode = $command->run(['--site=missing', '--schedule-id=sched-1']);
 

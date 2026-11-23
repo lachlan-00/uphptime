@@ -40,6 +40,15 @@ use Uphptime\Tests\Storage\InMemorySiteRepository;
 
 final class MaintenanceScheduleRemoveCommandTest extends TestCase
 {
+    public function testMissingScheduleIdFailsWithNonZeroExit(): void
+    {
+        $command = new MaintenanceScheduleRemoveCommand(new InMemoryMaintenanceScheduleRepository(), new InMemorySiteRepository(), new FakeConsoleOutput());
+
+        $exitCode = $command->run([]);
+
+        self::assertSame(1, $exitCode);
+    }
+
     public function testRemovesFromCatalogAndUnassignsFromEverySite(): void
     {
         [$schedules, $sites] = $this->catalogWithOneAssignedSchedule();
@@ -64,15 +73,6 @@ final class MaintenanceScheduleRemoveCommandTest extends TestCase
         self::assertSame(0, $exitCode);
         self::assertNotNull($schedules->find('sched-1'));
         self::assertSame(['sched-1'], $sites->find('site-a')?->scheduleIds);
-    }
-
-    public function testMissingScheduleIdFailsWithNonZeroExit(): void
-    {
-        $command = new MaintenanceScheduleRemoveCommand(new InMemoryMaintenanceScheduleRepository(), new InMemorySiteRepository(), new FakeConsoleOutput());
-
-        $exitCode = $command->run([]);
-
-        self::assertSame(1, $exitCode);
     }
 
     /** @return array{0: InMemoryMaintenanceScheduleRepository, 1: InMemorySiteRepository} */

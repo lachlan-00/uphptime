@@ -160,6 +160,12 @@ final class JsonSiteRepository implements SiteRepositoryInterface
         return $windows;
     }
 
+    /** @return array<string, mixed> */
+    private function readFile(): array
+    {
+        return $this->decodeFile($this->writer->read($this->path));
+    }
+
     /**
      * @param array<string, mixed> $data
      * @return string[]
@@ -169,12 +175,6 @@ final class JsonSiteRepository implements SiteRepositoryInterface
         $rawIds = $data['schedule_ids'] ?? [];
 
         return is_array($rawIds) ? array_values(array_map(static fn(mixed $id): string => (string) $id, $rawIds)) : [];
-    }
-
-    /** @return array<string, mixed> */
-    private function readFile(): array
-    {
-        return $this->decodeFile($this->writer->read($this->path));
     }
 
     /** @param array<string, mixed> $data */

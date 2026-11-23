@@ -1,8 +1,9 @@
 .php-cs-fixer.cache
 .idea
+sites.json
 config/node.json
+docker/crontab
 .phpunit.cache/
 build/
 docker/with-dashboard/docker/
-docker/crontab
 vendor/

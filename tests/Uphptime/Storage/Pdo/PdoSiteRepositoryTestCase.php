@@ -201,27 +201,6 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
         self::assertSame([], $resaved->maintenanceWindows);
     }
 
-    // Assigned schedule ids live in a child join table (FK'd to the maintenance_schedules catalog)
-    // and must survive a save/find round trip, including a resave that replaces the assignment set
-    // entirely rather than appending to it.
-    public function testScheduleIdsRoundTripAndAreReplacedOnResave(): void
-    {
-        $repository = $this->repository();
-        $this->seedCatalogSchedules(['sched-1', 'sched-2', 'sched-3']);
-
-        $repository->save($this->site('a')->withScheduleIds(['sched-1', 'sched-2']));
-
-        $found = $repository->find('a');
-        self::assertNotNull($found);
-        self::assertSame(['sched-1', 'sched-2'], $found->scheduleIds);
-
-        $repository->save($found->withScheduleIds(['sched-3']));
-
-        $resaved = $repository->find('a');
-        self::assertNotNull($resaved);
-        self::assertSame(['sched-3'], $resaved->scheduleIds);
-    }
-
     public function testNextDueAtOrderingSupportsDueSiteSelection(): void
     {
         $repository = $this->repository();
@@ -250,6 +229,27 @@ abstract class PdoSiteRepositoryTestCase extends TestCase
         $found = $repository->find('a');
         self::assertNotNull($found);
         self::assertSame(SiteState::Up, $found->state->status);
+    }
+
+    // Assigned schedule ids live in a child join table (FK'd to the maintenance_schedules catalog)
+    // and must survive a save/find round trip, including a resave that replaces the assignment set
+    // entirely rather than appending to it.
+    public function testScheduleIdsRoundTripAndAreReplacedOnResave(): void
+    {
+        $repository = $this->repository();
+        $this->seedCatalogSchedules(['sched-1', 'sched-2', 'sched-3']);
+
+        $repository->save($this->site('a')->withScheduleIds(['sched-1', 'sched-2']));
+
+        $found = $repository->find('a');
+        self::assertNotNull($found);
+        self::assertSame(['sched-1', 'sched-2'], $found->scheduleIds);
+
+        $repository->save($found->withScheduleIds(['sched-3']));
+
+        $resaved = $repository->find('a');
+        self::assertNotNull($resaved);
+        self::assertSame(['sched-3'], $resaved->scheduleIds);
     }
 
     abstract protected function dialectName(): string;

@@ -84,6 +84,24 @@ final class MaintenanceSchedule
         return $local >= $occurrenceStart && $local < $occurrenceEnd;
     }
 
+    private function monthlyOccurrenceStartAtOrBefore(DateTimeImmutable $start, DateTimeImmutable $local): ?DateTimeImmutable
+    {
+        $monthsElapsed = ((((int) $local->format('Y')) - (int) $start->format('Y')) * 12)
+            + ((int) $local->format('n') - (int) $start->format('n'));
+        $periodsAgo = intdiv($monthsElapsed, $this->repeatEvery);
+
+        // Walk outward from the nearest guess until we find the latest occurrence at or before
+        // $local - calendar-month arithmetic isn't exact modular arithmetic (months vary in length).
+        for ($attempt = $periodsAgo + 1; $attempt >= $periodsAgo - 1; $attempt--) {
+            $candidate = $start->modify(sprintf('%+d months', $attempt * $this->repeatEvery));
+            if ($candidate <= $local) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     // The latest occurrence start at or before $local, for the matching repeat unit. Fixed-length
     // units (hour/day/week) use timestamp arithmetic; Month uses calendar-month arithmetic since
     // months vary in length.
@@ -108,24 +126,6 @@ final class MaintenanceSchedule
         $periodsAgo = (int) floor($elapsed / $periodSeconds);
 
         return $anchor->modify(sprintf('%+d seconds', $periodsAgo * $periodSeconds));
-    }
-
-    private function monthlyOccurrenceStartAtOrBefore(DateTimeImmutable $start, DateTimeImmutable $local): ?DateTimeImmutable
-    {
-        $monthsElapsed = ((((int) $local->format('Y')) - (int) $start->format('Y')) * 12)
-            + ((int) $local->format('n') - (int) $start->format('n'));
-        $periodsAgo = intdiv($monthsElapsed, $this->repeatEvery);
-
-        // Walk outward from the nearest guess until we find the latest occurrence at or before
-        // $local - calendar-month arithmetic isn't exact modular arithmetic (months vary in length).
-        for ($attempt = $periodsAgo + 1; $attempt >= $periodsAgo - 1; $attempt--) {
-            $candidate = $start->modify(sprintf('%+d months', $attempt * $this->repeatEvery));
-            if ($candidate <= $local) {
-                return $candidate;
-            }
-        }
-
-        return null;
     }
 
     private function shiftToDayOfWeek(DateTimeImmutable $when, int $dayOfWeek): DateTimeImmutable

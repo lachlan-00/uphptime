@@ -51,7 +51,26 @@ final class ReportCommandTest extends TestCase
         $exitCode = $command->run(['--group=prod', '--date=2026-11-01']);
 
         self::assertSame(0, $exitCode);
-        self::assertSame('day', $output->lastLineDecoded()['period']);
+        $decoded = $output->lastLineDecoded();
+        self::assertSame('day', $decoded['period']);
+        self::assertArrayHasKey('checks_expected', $decoded['items'][0], 'a day report must expose how many checks were expected, not just how many landed');
+    }
+
+    public function testDayReportExposesChecksExpectedAgainstTheSiteOwnInterval(): void
+    {
+        $sites = new InMemorySiteRepository();
+        $clock = new FakeClock('2026-11-01T01:00:00+00:00');
+        // 300-second (5-minute) interval, one hour elapsed since midnight - 12 checks expected.
+        (new SitesAddCommand($sites, $clock, new FakeConsoleOutput()))->run(['--url=https://example.test/', '--interval=300']);
+        $id = $sites->all()[0]->id;
+
+        $output  = new FakeConsoleOutput();
+        $command = $this->command($sites, $clock, $output);
+
+        $exitCode = $command->run(['--id=' . $id, '--period=day', '--date=2026-11-01']);
+
+        self::assertSame(0, $exitCode);
+        self::assertSame(12, $output->lastLineDecoded()['checks_expected']);
     }
 
     public function testGroupReportsEveryMatchingSitePlusAnOverall(): void
@@ -150,9 +169,10 @@ final class ReportCommandTest extends TestCase
 
     private function command(InMemorySiteRepository $sites, FakeClock $clock, FakeConsoleOutput $output): ReportCommand
     {
+        $config     = new Config('data', 300, 90, 10, 240, 900, 'uphptime-test', 'UTC');
         $calculator = new UptimeReportCalculator(new InMemoryHistoryRepository(), new InMemoryRollupRepository(), $clock);
-        $builder    = new SiteReportSetBuilder($sites, $calculator, $clock, new Config('data', 300, 90, 10, 240, 900, 'uphptime-test', 'UTC'));
+        $builder    = new SiteReportSetBuilder($sites, $calculator, $clock, $config);
 
-        return new ReportCommand($sites, $calculator, $clock, $builder, $output);
+        return new ReportCommand($sites, $calculator, $clock, $builder, $output, $config);
     }
 }

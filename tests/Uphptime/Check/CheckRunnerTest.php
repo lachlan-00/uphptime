@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 use Uphptime\Api\Client\DelegatedCheckResult;
 use Uphptime\Check\AttestationVerifier;
 use Uphptime\Check\CanarySampler;
+use Uphptime\Check\CheckerInterface;
 use Uphptime\Check\CheckOutcome;
 use Uphptime\Check\CheckResult;
 use Uphptime\Check\CheckRunner;
@@ -423,6 +424,28 @@ final class CheckRunnerTest extends TestCase
         self::assertCount(3, $history->readDay('a', '2026-01-01'), 'one check per tick - the fix must never skip a tick nor spam extra checks to catch up');
     }
 
+    public function testPeerErrorReplyTriesTheNextPeerBeforeFallingBack(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $history = new InMemoryHistoryRepository();
+        $peers   = new InMemoryPeerRepository();
+        $peers->save($this->peer('peer-a'));
+        $peers->save($this->peer('peer-b'));
+        $peerClient = FakePeerCheckClient::byPeerId([
+            'peer-a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none'),
+            'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 5), 'k1', null, 'none'),
+        ]);
+
+        $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
+
+        $records = $history->readDay('a', '2026-01-01');
+        self::assertCount(1, $records);
+        self::assertSame(CheckOutcome::Pass, $records[0]->outcome);
+        self::assertSame('peer-b', $records[0]->peerId);
+    }
+
     public function testPeerFailureCorroboratedByAnUnreachableSelfCheckIsDown(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
@@ -506,6 +529,41 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(1, $rollup->checksUnknown);
         self::assertSame(0, $rollup->checksFail);
         self::assertSame(50.0, $rollup->uptimePercent);
+    }
+
+    public function testSlowerSiteWithinTheSameRunIsNotPenalisedWithAnExtraInterval(): void
+    {
+        // A site slow to check within one run must still land on the normal next slot, not an extra one.
+        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('fast', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $sites->save($this->site('slow', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $history = new InMemoryHistoryRepository();
+        // 'slow' takes 6 simulated minutes to check, past the 5-minute slot both sites shared.
+        $checker = new class ($clock) implements CheckerInterface {
+            private int $calls = 0;
+
+            public function __construct(private readonly FakeClock $clock) {}
+
+            public function check(Site $site, float $timeoutSeconds): CheckResult
+            {
+                $this->calls++;
+                if ($this->calls === 2) {
+                    $this->clock->advance('+6 minutes');
+                }
+
+                return CheckResult::pass();
+            }
+        };
+
+        $summary = $this->buildRunner($sites, $history, $clock, $checker, $this->config())->run();
+
+        self::assertSame(2, $summary->checked);
+        self::assertEquals(
+            new DateTimeImmutable('2026-01-01T00:05:00+00:00'),
+            $sites->find('slow')->state->nextDueAt,
+            'a site slow to check within this run must land on the normal next slot, not be bumped an extra interval',
+        );
     }
 
     public function testThreePeerCapAppliesIndependentlyToConfirmationAcquisition(): void
@@ -604,28 +662,6 @@ final class CheckRunnerTest extends TestCase
         self::assertSame(0.0, $report->uptimePercent(), 'the error still counts against uptime');
     }
 
-    public function testPeerErrorReplyTriesTheNextPeerBeforeFallingBack(): void
-    {
-        $clock = new FakeClock('2026-01-01T00:00:00+00:00');
-        $sites = new InMemorySiteRepository();
-        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
-        $history = new InMemoryHistoryRepository();
-        $peers   = new InMemoryPeerRepository();
-        $peers->save($this->peer('peer-a'));
-        $peers->save($this->peer('peer-b'));
-        $peerClient = FakePeerCheckClient::byPeerId([
-            'peer-a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none'),
-            'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 5), 'k1', null, 'none'),
-        ]);
-
-        $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
-
-        $records = $history->readDay('a', '2026-01-01');
-        self::assertCount(1, $records);
-        self::assertSame(CheckOutcome::Pass, $records[0]->outcome);
-        self::assertSame('peer-b', $records[0]->peerId);
-    }
-
     public function testZeroEnabledPeersBehavesIdenticallyToTheSelfCheckPath(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
@@ -651,7 +687,7 @@ final class CheckRunnerTest extends TestCase
         ?InMemoryPeerReputationRepository $reputations,
         ?FakeRandom $random,
         InMemoryChallengeTokenStore $challengeTokenStore,
-        FakeChecker $httpChecker,
+        CheckerInterface $httpChecker,
     ): array {
         if ($peers === null || $peerClient === null) {
             return [null, null, null, null];
@@ -681,7 +717,7 @@ final class CheckRunnerTest extends TestCase
         InMemorySiteRepository $sites,
         InMemoryHistoryRepository $history,
         FakeClock $clock,
-        FakeChecker $httpChecker,
+        CheckerInterface $httpChecker,
         Config $config,
         ?InMemoryPeerRepository $peers = null,
         ?FakePeerCheckClient $peerClient = null,

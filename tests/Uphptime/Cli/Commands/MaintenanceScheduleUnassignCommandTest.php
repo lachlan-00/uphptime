@@ -37,19 +37,6 @@ use Uphptime\Tests\Storage\InMemorySiteRepository;
 
 final class MaintenanceScheduleUnassignCommandTest extends TestCase
 {
-    public function testUnassignsFromASiteWithoutTouchingOtherAssignments(): void
-    {
-        $sites = $this->siteAssignedToTwoSchedules();
-
-        $exitCode = (new MaintenanceScheduleUnassignCommand($sites, new FakeConsoleOutput()))->run([
-            '--site=site-a',
-            '--schedule-id=sched-1',
-        ]);
-
-        self::assertSame(0, $exitCode);
-        self::assertSame(['sched-2'], $sites->find('site-a')?->scheduleIds);
-    }
-
     public function testUnassigningAMissingIdIsNotAnError(): void
     {
         $sites = $this->siteAssignedToTwoSchedules();
@@ -61,6 +48,19 @@ final class MaintenanceScheduleUnassignCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
         self::assertSame(['sched-1', 'sched-2'], $sites->find('site-a')?->scheduleIds);
+    }
+
+    public function testUnassignsFromASiteWithoutTouchingOtherAssignments(): void
+    {
+        $sites = $this->siteAssignedToTwoSchedules();
+
+        $exitCode = (new MaintenanceScheduleUnassignCommand($sites, new FakeConsoleOutput()))->run([
+            '--site=site-a',
+            '--schedule-id=sched-1',
+        ]);
+
+        self::assertSame(0, $exitCode);
+        self::assertSame(['sched-2'], $sites->find('site-a')?->scheduleIds);
     }
 
     public function testUnknownSiteFailsWithNonZeroExit(): void

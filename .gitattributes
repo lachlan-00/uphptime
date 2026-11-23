@@ -15,4 +15,5 @@ Dockerfile eol=lf
 *.sql eol=lf
 *.xhtml eol=lf
 *.yml eol=lf
+.git* eol=lf
 resources/git-hooks/* eol=lf

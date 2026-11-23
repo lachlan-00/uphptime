@@ -79,21 +79,6 @@ final class MaintenanceScheduleAddCommandTest extends TestCase
         self::assertNull($all[0]->repeatDayOfWeek);
     }
 
-    public function testMissingNameFailsWithNonZeroExit(): void
-    {
-        $schedules = new InMemoryMaintenanceScheduleRepository();
-        $command   = new MaintenanceScheduleAddCommand($schedules, new FakeConsoleOutput());
-
-        $exitCode = $command->run([
-            '--start=2026-11-18 23:55',
-            '--timezone=UTC',
-            '--duration-minutes=60',
-        ]);
-
-        self::assertSame(1, $exitCode);
-        self::assertSame([], $schedules->all());
-    }
-
     public function testInvalidRepeatUnitFailsWithNonZeroExit(): void
     {
         $schedules = new InMemoryMaintenanceScheduleRepository();
@@ -105,6 +90,21 @@ final class MaintenanceScheduleAddCommandTest extends TestCase
             '--timezone=UTC',
             '--duration-minutes=60',
             '--repeat-unit=fortnight',
+        ]);
+
+        self::assertSame(1, $exitCode);
+        self::assertSame([], $schedules->all());
+    }
+
+    public function testMissingNameFailsWithNonZeroExit(): void
+    {
+        $schedules = new InMemoryMaintenanceScheduleRepository();
+        $command   = new MaintenanceScheduleAddCommand($schedules, new FakeConsoleOutput());
+
+        $exitCode = $command->run([
+            '--start=2026-11-18 23:55',
+            '--timezone=UTC',
+            '--duration-minutes=60',
         ]);
 
         self::assertSame(1, $exitCode);

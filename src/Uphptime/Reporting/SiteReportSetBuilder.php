@@ -79,13 +79,19 @@ final class SiteReportSetBuilder
         foreach ($sites as $site) {
             $report  = $this->reportFor($site->id, $period, $date, $month, $now);
             $overall = $overall->merge($report);
-            $items[] = [
+            $item    = [
                 'id' => $site->id,
                 'name' => $site->name,
                 'groups' => $site->groups,
                 'state' => $site->state->effectiveStatus($now, $this->config->staleAfterSeconds)->value,
                 'enabled' => $site->enabled,
             ] + $report->toArray();
+
+            if ($period === 'day') {
+                $item['checks_expected'] = ExpectedChecksCalculator::forDay($site, $date ?? $now->format('Y-m-d'), $now, $this->config->checkIntervalSeconds);
+            }
+
+            $items[] = $item;
         }
 
         return new SiteReportSet($period, $now, $items, $overall);

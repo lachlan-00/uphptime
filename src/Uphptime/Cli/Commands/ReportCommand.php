@@ -28,6 +28,8 @@ namespace Uphptime\Cli\Commands;
 use Uphptime\Cli\ArgvOptions;
 use Uphptime\Cli\CommandInterface;
 use Uphptime\Cli\ConsoleOutputInterface;
+use Uphptime\Config\Config;
+use Uphptime\Reporting\ExpectedChecksCalculator;
 use Uphptime\Reporting\SiteReportSetBuilder;
 use Uphptime\Reporting\UptimeReportCalculator;
 use Uphptime\Site\Site;
@@ -47,6 +49,7 @@ final class ReportCommand implements CommandInterface
         private readonly ClockInterface $clock,
         private readonly SiteReportSetBuilder $reportSetBuilder,
         private readonly ConsoleOutputInterface $output,
+        private readonly Config $config,
     ) {}
 
     public function run(array $args): int
@@ -147,10 +150,12 @@ final class ReportCommand implements CommandInterface
             return 1;
         }
 
-        $this->output->writeLine(json_encode(
-            ['site_id' => $site->id, 'site_name' => $site->name, 'period' => $period] + $report->toArray(),
-            JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT,
-        ));
+        $payload = ['site_id' => $site->id, 'site_name' => $site->name, 'period' => $period] + $report->toArray();
+        if ($period === 'day') {
+            $payload['checks_expected'] = ExpectedChecksCalculator::forDay($site, $options['date'] ?? $this->clock->now()->format('Y-m-d'), $this->clock->now(), $this->config->checkIntervalSeconds);
+        }
+
+        $this->output->writeLine(json_encode($payload, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
 
         return 0;
     }

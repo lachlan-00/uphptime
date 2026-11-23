@@ -50,35 +50,6 @@ use Uphptime\Tests\Support\FakeRandom;
 
 final class PeerResultAcquirerTest extends TestCase
 {
-    public function testExhaustsConfiguredAttemptsAndRecordsABadEventPerNonResponse(): void
-    {
-        $peers = new InMemoryPeerRepository();
-        $peers->save($this->peer('a'));
-        $peers->save($this->peer('b'));
-        $peers->save($this->peer('c'));
-
-        $client                   = FakePeerCheckClient::byPeerId(['a' => null, 'b' => null, 'c' => null]);
-        [$acquirer, $reputations] = $this->acquirer($peers, $client);
-
-        $result = $acquirer->acquire($this->site(), [], 10.0);
-
-        self::assertNull($result);
-        self::assertSame(80.0, $reputations->get('a')->score);
-        self::assertSame(80.0, $reputations->get('b')->score);
-        self::assertSame(80.0, $reputations->get('c')->score);
-    }
-
-    public function testStopsEarlyWhenFewerCandidatesThanTheMaxExist(): void
-    {
-        $peers = new InMemoryPeerRepository();
-        $peers->save($this->peer('a'));
-
-        $client     = FakePeerCheckClient::byPeerId(['a' => null]);
-        [$acquirer] = $this->acquirer($peers, $client);
-
-        self::assertNull($acquirer->acquire($this->site(), [], 10.0));
-    }
-
     public function testErrorReplySettlesNothingAndTheNextPeerIsTried(): void
     {
         $peers = new InMemoryPeerRepository();
@@ -99,12 +70,41 @@ final class PeerResultAcquirerTest extends TestCase
         self::assertSame(100.0, $reputations->get('a')->score, 'an error reply is a valid response, not a non-response');
     }
 
+    public function testExhaustsConfiguredAttemptsAndRecordsABadEventPerNonResponse(): void
+    {
+        $peers = new InMemoryPeerRepository();
+        $peers->save($this->peer('a'));
+        $peers->save($this->peer('b'));
+        $peers->save($this->peer('c'));
+
+        $client                   = FakePeerCheckClient::byPeerId(['a' => null, 'b' => null, 'c' => null]);
+        [$acquirer, $reputations] = $this->acquirer($peers, $client);
+
+        $result = $acquirer->acquire($this->site(), [], 10.0);
+
+        self::assertNull($result);
+        self::assertSame(80.0, $reputations->get('a')->score);
+        self::assertSame(80.0, $reputations->get('b')->score);
+        self::assertSame(80.0, $reputations->get('c')->score);
+    }
+
     public function testOnlyErrorRepliesYieldsNull(): void
     {
         $peers = new InMemoryPeerRepository();
         $peers->save($this->peer('a'));
 
         $client     = FakePeerCheckClient::byPeerId(['a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none')]);
+        [$acquirer] = $this->acquirer($peers, $client);
+
+        self::assertNull($acquirer->acquire($this->site(), [], 10.0));
+    }
+
+    public function testStopsEarlyWhenFewerCandidatesThanTheMaxExist(): void
+    {
+        $peers = new InMemoryPeerRepository();
+        $peers->save($this->peer('a'));
+
+        $client     = FakePeerCheckClient::byPeerId(['a' => null]);
         [$acquirer] = $this->acquirer($peers, $client);
 
         self::assertNull($acquirer->acquire($this->site(), [], 10.0));

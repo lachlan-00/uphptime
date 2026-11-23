@@ -88,7 +88,9 @@ final class CheckRunner
     public function run(?int $budgetSecondsOverride = null): RunSummary
     {
         $startedAtMs = $this->nowMs();
-        $budget      = new RunBudget($this->clock, $budgetSecondsOverride ?? $this->config->runBudgetSeconds);
+        // Anchors every site in a run to one instant, so a slow site queued late doesn't see its own next slot as already passed.
+        $now    = $this->clock->now();
+        $budget = new RunBudget($this->clock, $budgetSecondsOverride ?? $this->config->runBudgetSeconds);
 
         $rollupsClosed = $this->rollupBuilder->closeFinishedDays();
         $prunedFiles   = $this->retentionPruner->prune($this->config->retentionDays);
@@ -96,13 +98,13 @@ final class CheckRunner
         $checked = 0;
         $skipped = 0;
 
-        foreach ($this->dueSitesInOrder() as $site) {
+        foreach ($this->dueSitesInOrder($now) as $site) {
             if ($budget->isExhausted()) {
                 $skipped++;
                 continue;
             }
 
-            $this->checkOne($site);
+            $this->checkOne($site, $now);
             $checked++;
         }
 
@@ -110,35 +112,15 @@ final class CheckRunner
     }
 
     /** @param array<string, mixed>|null $evidence */
-    private function applyResult(Site $site, CheckResult $result, DateTimeImmutable $checkedAt, string $source, ?array $evidence, string $attestation, HistoryRecordRole $role = HistoryRecordRole::Primary, ?Peer $peer = null): void
+    private function applyResult(Site $site, CheckResult $result, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow, string $source, ?array $evidence, string $attestation, HistoryRecordRole $role = HistoryRecordRole::Primary, ?Peer $peer = null): void
     {
-        $newState = $this->transitionFor($site, $result, $checkedAt);
+        $newState = $this->transitionFor($site, $result, $checkedAt, $schedulingNow);
         $this->persistTransition($site, $newState, $result, $checkedAt, $source, $evidence, $attestation, $role, flagged: false, peer: $peer);
-    }
-
-    private function checkOne(Site $site): void
-    {
-        $checkedAt = $this->clock->now();
-
-        if ($this->hasUsablePeer()) {
-            // Issued fresh once per check cycle, before the first contact, so a genuinely different
-            // confirmation/canary peer probing the same site within this cycle sees the same live
-            // token - a self-check never issues one, since there's no second party to attest to.
-            if ($site->usesChallengeToken()) {
-                $this->challengeTokenStore->issue($site->id, $checkedAt, $this->config->challengeTokenTtlSeconds);
-            }
-
-            $this->checkOneViaPeer($site, $checkedAt);
-
-            return;
-        }
-
-        $this->checkLocally($site, $checkedAt);
     }
 
     // A check run by this node itself: the whole path with no usable peer, and the last resort when
     // peers were tried but none returned a conclusive result.
-    private function checkLocally(Site $site, DateTimeImmutable $checkedAt): void
+    private function checkLocally(Site $site, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $checker = $this->checkers[$site->checkType->value];
 
@@ -154,35 +136,54 @@ final class CheckRunner
             $result = $result->asUnverifiedError();
         }
 
-        $this->applyResult($site, $result, $checkedAt, 'self', null, 'none');
+        $this->applyResult($site, $result, $checkedAt, $schedulingNow, 'self', null, 'none');
     }
 
-    private function checkOneViaPeer(Site $site, DateTimeImmutable $checkedAt): void
+    private function checkOne(Site $site, DateTimeImmutable $schedulingNow): void
+    {
+        $checkedAt = $this->clock->now();
+
+        if ($this->hasUsablePeer()) {
+            // Issued fresh once per check cycle, before the first contact, so a genuinely different
+            // confirmation/canary peer probing the same site within this cycle sees the same live
+            // token - a self-check never issues one, since there's no second party to attest to.
+            if ($site->usesChallengeToken()) {
+                $this->challengeTokenStore->issue($site->id, $checkedAt, $this->config->challengeTokenTtlSeconds);
+            }
+
+            $this->checkOneViaPeer($site, $checkedAt, $schedulingNow);
+
+            return;
+        }
+
+        $this->checkLocally($site, $checkedAt, $schedulingNow);
+    }
+
+    private function checkOneViaPeer(Site $site, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $acquired = $this->peerResultAcquirer?->acquire($site, [], (float) $this->config->peerRequestTimeoutSeconds);
 
         if ($acquired === null || $acquired->result->outcome === CheckOutcome::Error) {
             // No peer produced a conclusive result within max_delegates_per_acquisition attempts:
             // fall back to checking from this node rather than recording an unmeasured cycle.
-            $this->checkLocally($site, $checkedAt);
+            $this->checkLocally($site, $checkedAt, $schedulingNow);
 
             return;
         }
 
         if ($acquired->result->outcome === CheckOutcome::Fail) {
-            $this->resolveFail($site, $acquired, $checkedAt);
+            $this->resolveFail($site, $acquired, $checkedAt, $schedulingNow);
 
             return;
         }
 
-        $this->resolvePass($site, $acquired, $checkedAt);
+        $this->resolvePass($site, $acquired, $checkedAt, $schedulingNow);
     }
 
     // Enabled sites whose next_due_at has passed, soonest-due first.
     /** @return Site[] */
-    private function dueSitesInOrder(): array
+    private function dueSitesInOrder(DateTimeImmutable $now): array
     {
-        $now = $this->clock->now();
         $due = array_values(array_filter(
             $this->siteRepository->all(),
             static fn(Site $site): bool => $site->enabled && $site->state->nextDueAt <= $now,
@@ -199,6 +200,19 @@ final class CheckRunner
     private function hasUsablePeer(): bool
     {
         return $this->peerSelector !== null && $this->peerResultAcquirer !== null && $this->peerSelector->pick([]) !== null;
+    }
+
+    // Steps from the previous slot in whole intervals past $schedulingNow, not $checkedAt, so a slow run can't bake its lag into the schedule.
+    // A slot far behind after real downtime fast-forwards to the next free one, so a gap never bursts into a run of back-to-back checks.
+    private function nextDueAtAfter(DateTimeImmutable $previousDueAt, DateTimeImmutable $schedulingNow, int $interval): DateTimeImmutable
+    {
+        $nextDueAt = $previousDueAt;
+
+        do {
+            $nextDueAt = $nextDueAt->modify(sprintf('+%d seconds', $interval));
+        } while ($nextDueAt <= $schedulingNow);
+
+        return $nextDueAt;
     }
 
     private function nowMs(): int
@@ -260,12 +274,12 @@ final class CheckRunner
     }
 
     // The primary peer's failure must be confirmed before it can affect the monitor's state.
-    private function resolveFail(Site $site, AcquiredPeerResult $primary, DateTimeImmutable $checkedAt): void
+    private function resolveFail(Site $site, AcquiredPeerResult $primary, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $primarySource = $primary->source();
 
         if ($this->downConfirmer === null) {
-            $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
+            $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $schedulingNow, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
 
             return;
         }
@@ -277,29 +291,29 @@ final class CheckRunner
         $attestation = $confirmation->attestation;
 
         if (!$confirmation->confirmed || $result === null || $source === null || $attestation === null || $result->outcome === CheckOutcome::Error) {
-            $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
+            $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $schedulingNow, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
 
             return;
         }
 
         if ($result->outcome === CheckOutcome::Pass) {
             $this->recordWithoutMutating($site, $primary->result, $checkedAt, $primarySource, $primary->evidence, $primary->attestation, HistoryRecordRole::Confirmation, $primary->peer);
-            $this->applyResult($site, $result, $checkedAt, $source, $confirmation->evidence, $attestation, HistoryRecordRole::Primary, $confirmation->peer);
+            $this->applyResult($site, $result, $checkedAt, $schedulingNow, $source, $confirmation->evidence, $attestation, HistoryRecordRole::Primary, $confirmation->peer);
 
             return;
         }
 
         $this->recordWithoutMutating($site, $primary->result, $checkedAt, $primarySource, $primary->evidence, $primary->attestation, HistoryRecordRole::Primary, $primary->peer);
-        $this->applyResult($site, $result, $checkedAt, $source, $confirmation->evidence, $attestation, HistoryRecordRole::Confirmation, $confirmation->peer);
+        $this->applyResult($site, $result, $checkedAt, $schedulingNow, $source, $confirmation->evidence, $attestation, HistoryRecordRole::Confirmation, $confirmation->peer);
     }
 
     // An accepted Pass is applied immediately and unconditionally; canary sampling is a separate,
     // never-blocking integrity check on a result already acted on. Its records are appended only
     // after the primary record, so a disagreement can flag the primary before it is ever written.
-    private function resolvePass(Site $site, AcquiredPeerResult $primary, DateTimeImmutable $checkedAt): void
+    private function resolvePass(Site $site, AcquiredPeerResult $primary, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): void
     {
         $source   = $primary->source();
-        $newState = $this->transitionFor($site, $primary->result, $checkedAt);
+        $newState = $this->transitionFor($site, $primary->result, $checkedAt, $schedulingNow);
 
         $canaryOutcome = $this->canarySampler?->sampleAfterPass($site, $primary, $newState->status, $checkedAt);
         $flagged       = $canaryOutcome->flagged ?? false;
@@ -311,37 +325,15 @@ final class CheckRunner
         }
     }
 
-    private function transitionFor(Site $site, CheckResult $result, DateTimeImmutable $checkedAt): SiteRuntimeState
+    private function transitionFor(Site $site, CheckResult $result, DateTimeImmutable $checkedAt, DateTimeImmutable $schedulingNow): SiteRuntimeState
     {
         $newState = $result->outcome === CheckOutcome::Error
             ? $site->state->withErrorChecked($checkedAt)
             : $this->stateMachine->apply($site->state, $result->outcome, $checkedAt);
 
         $interval  = $site->intervalSeconds($this->config->checkIntervalSeconds);
-        $nextDueAt = $this->nextDueAtAfter($site->state->nextDueAt, $checkedAt, $interval);
+        $nextDueAt = $this->nextDueAtAfter($site->state->nextDueAt, $schedulingNow, $interval);
 
         return $newState->withNextDueAt($nextDueAt);
-    }
-
-    // Advances from the site's previous scheduled slot by whole multiples of $interval until the
-    // result lands strictly after $checkedAt - never from $checkedAt itself. dueSitesInOrder() reads
-    // the clock once near the very start of a run, before any delegation/confirmation round-trips
-    // have spent their time; if the next slot were $checkedAt + $interval instead, every second that
-    // this run's own processing took would get baked into the schedule and carried forward, and once
-    // that accumulated lag crossed the next cron tick's evaluation instant, that tick would see the
-    // site as not-yet-due and skip it - silently halving the effective check frequency over time. By
-    // always stepping forward from the last scheduled slot (a fixed grid), per-run latency is absorbed
-    // without ever shifting the grid. A slot already at or behind $checkedAt (a missed-tick backlog,
-    // e.g. after downtime) is fast-forwarded to the next free slot without ever queuing the missed
-    // checks themselves - so recovering from a gap can never turn into a burst of back-to-back checks.
-    private function nextDueAtAfter(DateTimeImmutable $previousDueAt, DateTimeImmutable $checkedAt, int $interval): DateTimeImmutable
-    {
-        $nextDueAt = $previousDueAt;
-
-        do {
-            $nextDueAt = $nextDueAt->modify(sprintf('+%d seconds', $interval));
-        } while ($nextDueAt <= $checkedAt);
-
-        return $nextDueAt;
     }
 }

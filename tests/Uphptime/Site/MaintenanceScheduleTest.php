@@ -32,34 +32,6 @@ use Uphptime\Site\MaintenanceSchedule;
 
 final class MaintenanceScheduleTest extends TestCase
 {
-    // Every week on Sunday 23:55 Brisbane (UTC+10, no DST) for 2 hours, starting from a Sunday -
-    // checked against UTC instants, since the node's own timezone and the schedule's timezone need
-    // not match.
-    private function weeklySundayBrisbaneSchedule(?DateTimeImmutable $endsOn = null): MaintenanceSchedule
-    {
-        return new MaintenanceSchedule(
-            id: 'sched-1',
-            name: 'Weekly release',
-            enabled: true,
-            startsAt: new DateTimeImmutable('2026-11-01T23:55:00+10:00'),
-            durationMinutes: 120,
-            timezone: 'Australia/Brisbane',
-            repeatEvery: 1,
-            repeatUnit: MaintenanceRepeatUnit::Week,
-            repeatDayOfWeek: null,
-            endsOn: $endsOn,
-            note: null,
-        );
-    }
-
-    public function testActiveJustAfterLocalStart(): void
-    {
-        $schedule = $this->weeklySundayBrisbaneSchedule();
-
-        // Sun 2026-11-22 23:55 Brisbane (UTC+10) = Sun 2026-11-22 13:55 UTC.
-        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T13:56:00+00:00')));
-    }
-
     public function testActiveAfterMidnightLocalEvenThoughUtcDayHasRolledOver(): void
     {
         $schedule = $this->weeklySundayBrisbaneSchedule();
@@ -70,27 +42,32 @@ final class MaintenanceScheduleTest extends TestCase
         self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T14:30:00+00:00')));
     }
 
-    public function testInactiveBeforeWindowStarts(): void
+    public function testActiveJustAfterLocalStart(): void
     {
         $schedule = $this->weeklySundayBrisbaneSchedule();
 
-        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T13:00:00+00:00')));
+        // Sun 2026-11-22 23:55 Brisbane (UTC+10) = Sun 2026-11-22 13:55 UTC.
+        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T13:56:00+00:00')));
     }
 
-    public function testInactiveAfterWindowEnds(): void
+    public function testDailyRepeat(): void
     {
-        $schedule = $this->weeklySundayBrisbaneSchedule();
+        $schedule = new MaintenanceSchedule(
+            id: 'sched-1',
+            name: 'Weekly release',
+            enabled: true,
+            startsAt: new DateTimeImmutable('2026-11-01T02:00:00+00:00'),
+            durationMinutes: 30,
+            timezone: 'UTC',
+            repeatEvery: 1,
+            repeatUnit: MaintenanceRepeatUnit::Day,
+            repeatDayOfWeek: null,
+            endsOn: null,
+            note: null,
+        );
 
-        // Mon 2026-11-23 02:00 Brisbane, past the 2-hour window.
-        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T16:00:00+00:00')));
-    }
-
-    public function testInactiveBeforeFirstOccurrence(): void
-    {
-        $schedule = $this->weeklySundayBrisbaneSchedule();
-
-        // A week before startsAt's own occurrence - the schedule shouldn't apply retroactively.
-        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-10-25T13:56:00+00:00')));
+        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-05T02:15:00+00:00')));
+        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-05T03:00:00+00:00')));
     }
 
     public function testDisabledScheduleIsNeverActive(): void
@@ -121,28 +98,6 @@ final class MaintenanceScheduleTest extends TestCase
         self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-29T13:56:00+00:00')));
     }
 
-    public function testRepeatEveryTwoWeeksSkipsTheInBetweenWeek(): void
-    {
-        $schedule = new MaintenanceSchedule(
-            id: 'sched-1',
-            name: 'Weekly release',
-            enabled: true,
-            startsAt: new DateTimeImmutable('2026-11-01T23:55:00+10:00'),
-            durationMinutes: 120,
-            timezone: 'Australia/Brisbane',
-            repeatEvery: 2,
-            repeatUnit: MaintenanceRepeatUnit::Week,
-            repeatDayOfWeek: null,
-            endsOn: null,
-            note: null,
-        );
-
-        // One week after start - should be skipped.
-        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-08T13:56:00+00:00')));
-        // Two weeks after start - should land.
-        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-15T13:56:00+00:00')));
-    }
-
     public function testExplicitRepeatDayOfWeekOverridesTheStartDate(): void
     {
         // startsAt is a Sunday, but the schedule should land on Tuesdays instead.
@@ -166,26 +121,6 @@ final class MaintenanceScheduleTest extends TestCase
         self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T13:56:00+00:00')));
     }
 
-    public function testDailyRepeat(): void
-    {
-        $schedule = new MaintenanceSchedule(
-            id: 'sched-1',
-            name: 'Weekly release',
-            enabled: true,
-            startsAt: new DateTimeImmutable('2026-11-01T02:00:00+00:00'),
-            durationMinutes: 30,
-            timezone: 'UTC',
-            repeatEvery: 1,
-            repeatUnit: MaintenanceRepeatUnit::Day,
-            repeatDayOfWeek: null,
-            endsOn: null,
-            note: null,
-        );
-
-        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-05T02:15:00+00:00')));
-        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-05T03:00:00+00:00')));
-    }
-
     public function testHourlyRepeat(): void
     {
         $schedule = new MaintenanceSchedule(
@@ -206,6 +141,29 @@ final class MaintenanceScheduleTest extends TestCase
         self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-01T07:05:00+00:00')));
     }
 
+    public function testInactiveAfterWindowEnds(): void
+    {
+        $schedule = $this->weeklySundayBrisbaneSchedule();
+
+        // Mon 2026-11-23 02:00 Brisbane, past the 2-hour window.
+        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T16:00:00+00:00')));
+    }
+
+    public function testInactiveBeforeFirstOccurrence(): void
+    {
+        $schedule = $this->weeklySundayBrisbaneSchedule();
+
+        // A week before startsAt's own occurrence - the schedule shouldn't apply retroactively.
+        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-10-25T13:56:00+00:00')));
+    }
+
+    public function testInactiveBeforeWindowStarts(): void
+    {
+        $schedule = $this->weeklySundayBrisbaneSchedule();
+
+        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-22T13:00:00+00:00')));
+    }
+
     public function testMonthlyRepeat(): void
     {
         $schedule = new MaintenanceSchedule(
@@ -224,5 +182,47 @@ final class MaintenanceScheduleTest extends TestCase
 
         self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-04-05T01:30:00+00:00')));
         self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-04-06T01:30:00+00:00')));
+    }
+
+    public function testRepeatEveryTwoWeeksSkipsTheInBetweenWeek(): void
+    {
+        $schedule = new MaintenanceSchedule(
+            id: 'sched-1',
+            name: 'Weekly release',
+            enabled: true,
+            startsAt: new DateTimeImmutable('2026-11-01T23:55:00+10:00'),
+            durationMinutes: 120,
+            timezone: 'Australia/Brisbane',
+            repeatEvery: 2,
+            repeatUnit: MaintenanceRepeatUnit::Week,
+            repeatDayOfWeek: null,
+            endsOn: null,
+            note: null,
+        );
+
+        // One week after start - should be skipped.
+        self::assertFalse($schedule->isActiveAt(new DateTimeImmutable('2026-11-08T13:56:00+00:00')));
+        // Two weeks after start - should land.
+        self::assertTrue($schedule->isActiveAt(new DateTimeImmutable('2026-11-15T13:56:00+00:00')));
+    }
+
+    // Every week on Sunday 23:55 Brisbane (UTC+10, no DST) for 2 hours, starting from a Sunday -
+    // checked against UTC instants, since the node's own timezone and the schedule's timezone need
+    // not match.
+    private function weeklySundayBrisbaneSchedule(?DateTimeImmutable $endsOn = null): MaintenanceSchedule
+    {
+        return new MaintenanceSchedule(
+            id: 'sched-1',
+            name: 'Weekly release',
+            enabled: true,
+            startsAt: new DateTimeImmutable('2026-11-01T23:55:00+10:00'),
+            durationMinutes: 120,
+            timezone: 'Australia/Brisbane',
+            repeatEvery: 1,
+            repeatUnit: MaintenanceRepeatUnit::Week,
+            repeatDayOfWeek: null,
+            endsOn: $endsOn,
+            note: null,
+        );
     }
 }

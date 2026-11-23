@@ -31,8 +31,8 @@ namespace Uphptime\Site;
  */
 enum MaintenanceRepeatUnit: string
 {
-    case Hour  = 'hour';
     case Day   = 'day';
-    case Week  = 'week';
+    case Hour  = 'hour';
     case Month = 'month';
+    case Week  = 'week';
 }

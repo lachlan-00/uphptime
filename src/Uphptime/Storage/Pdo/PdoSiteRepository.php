@@ -154,15 +154,6 @@ final class PdoSiteRepository implements SiteRepositoryInterface
         );
     }
 
-    /** @return string[] */
-    private function scheduleIdsFor(string $siteId): array
-    {
-        return array_map(
-            static fn(array $row): string => (string) $row['schedule_id'],
-            $this->query('SELECT * FROM site_schedule_assignments WHERE site_id = ? ORDER BY id ASC', [$siteId]),
-        );
-    }
-
     private function replaceGroups(Site $site): void
     {
         $this->rawExecute('DELETE FROM site_groups WHERE site_id = ?', [$site->id]);
@@ -194,6 +185,15 @@ final class PdoSiteRepository implements SiteRepositoryInterface
                 [$site->id, $scheduleId],
             );
         }
+    }
+
+    /** @return string[] */
+    private function scheduleIdsFor(string $siteId): array
+    {
+        return array_map(
+            static fn(array $row): string => (string) $row['schedule_id'],
+            $this->query('SELECT * FROM site_schedule_assignments WHERE site_id = ? ORDER BY id ASC', [$siteId]),
+        );
     }
 
     private function upsertSiteRow(Site $site): void

@@ -40,19 +40,6 @@ use Uphptime\Tests\Support\FakeClock;
 
 final class UptimeReportCalculatorTest extends TestCase
 {
-    public function testForDayUsesRollupWhenClosedAndRawHistoryForToday(): void
-    {
-        $history = new InMemoryHistoryRepository();
-        $rollups = new InMemoryRollupRepository();
-        $rollups->write(new DailyRollup('site-1', '2026-01-01', 5, 5, 0, 0, 0, 5, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
-        $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Fail));
-
-        $calculator = new UptimeReportCalculator($history, $rollups, new FakeClock('2026-01-02T12:00:00+00:00'));
-
-        self::assertSame(100.0, $calculator->forDay('site-1', '2026-01-01')->uptimePercent());
-        self::assertSame(0.0, $calculator->forDay('site-1', '2026-01-02')->uptimePercent());
-    }
-
     public function testErrorOutcomesCountAgainstUptimeButMaintenanceDoesNot(): void
     {
         $history = new InMemoryHistoryRepository();
@@ -66,6 +53,19 @@ final class UptimeReportCalculatorTest extends TestCase
         self::assertSame(1, $report->toArray()['checks_error']);
         self::assertSame(50.0, $report->uptimePercent());
         self::assertSame(50.0, $report->toArray()['error_percent']);
+    }
+
+    public function testForDayUsesRollupWhenClosedAndRawHistoryForToday(): void
+    {
+        $history = new InMemoryHistoryRepository();
+        $rollups = new InMemoryRollupRepository();
+        $rollups->write(new DailyRollup('site-1', '2026-01-01', 5, 5, 0, 0, 0, 5, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
+        $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Fail));
+
+        $calculator = new UptimeReportCalculator($history, $rollups, new FakeClock('2026-01-02T12:00:00+00:00'));
+
+        self::assertSame(100.0, $calculator->forDay('site-1', '2026-01-01')->uptimePercent());
+        self::assertSame(0.0, $calculator->forDay('site-1', '2026-01-02')->uptimePercent());
     }
 
     public function testNoDataYetReturnsNullPercentagesNotADivisionError(): void

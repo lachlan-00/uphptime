@@ -48,7 +48,7 @@ final class MaintenanceScheduleListCommand implements CommandInterface
 
     public function run(array $args): int
     {
-        $options   = ArgvOptions::parse($args);
+        $options    = ArgvOptions::parse($args);
         $scheduleId = $options['schedule-id'] ?? null;
         $siteId     = $options['site'] ?? null;
 
