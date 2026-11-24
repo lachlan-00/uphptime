@@ -11,3 +11,5 @@
 * Site groups, maintenance windows and optional HTTP challenge-token attestation.
 * JSON, MySQL and PostgreSQL storage, with import and export.
 * Report API, OpenAPI specification and Docker deployments, including a dashboard setup.
+* `check:run` output reports `total_sites` and `skipped_due_to_overlap` (sites left unchecked when the exclusive lock was already held by another run).
+* `storage:migrate-timezone --force` deduplicates history records and never writes more records than it read.
