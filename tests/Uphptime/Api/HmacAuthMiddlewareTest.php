@@ -156,9 +156,11 @@ final class HmacAuthMiddlewareTest extends TestCase
         foreach (glob($this->directory . '/*/*') ?: [] as $file) {
             @unlink($file);
         }
+
         foreach (glob($this->directory . '/*') ?: [] as $dir) {
             @rmdir($dir);
         }
+
         @rmdir($this->directory);
     }
 

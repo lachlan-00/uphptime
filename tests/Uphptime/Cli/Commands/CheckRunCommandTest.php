@@ -59,6 +59,7 @@ final class CheckRunCommandTest extends TestCase
         $sites   = new InMemorySiteRepository();
         $sites->save($this->dueSite('a'));
         $sites->save($this->dueSite('b'));
+
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock();
@@ -89,6 +90,8 @@ final class CheckRunCommandTest extends TestCase
         self::assertSame('Another check:run is already in progress.', $decoded['error']);
         self::assertSame(2, $decoded['total_sites']);
         self::assertSame(2, $decoded['skipped_due_to_overlap'], 'both sites were due and left unchecked by the overlapping run');
+        self::assertSame(0, $decoded['disabled_sites']);
+        self::assertSame(0, $decoded['not_due']);
 
         $holder->release();
         @unlink($lockPath);

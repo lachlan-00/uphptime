@@ -86,9 +86,7 @@ final class Config
     // Returns the process-wide config instance, loading it from $configPath on first use.
     public static function current(?string $configPath = null): self
     {
-        if (self::$instance === null) {
-            self::$instance = (new ConfigLoader())->load($configPath ?? dirname(__DIR__, 2) . '/config/node.json');
-        }
+        self::$instance ??= (new ConfigLoader())->load($configPath ?? dirname(__DIR__, 2) . '/config/node.json');
 
         return self::$instance;
     }

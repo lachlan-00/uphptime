@@ -65,7 +65,7 @@ final class DelegatedCheckExecutor implements DelegatedCheckExecutorInterface
             BlockedRanges::defaults(),
             $this->egressAllowedRanges,
             $this->tcpPortAllowlist,
-            $callingPeer !== null ? $callingPeer->targetAllowlist : [],
+            $callingPeer->targetAllowlist ?? [],
         );
 
         $httpClient   = new SafeHttpClient($this->dnsResolver, $egressPolicy, $this->maxRedirects, $this->responseSizeCapBytes, $this->preferredIpSelector);

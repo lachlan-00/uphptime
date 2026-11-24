@@ -64,7 +64,7 @@ final class CurlHttpClient implements HttpClientInterface
             throw new RuntimeException(curl_error($handle) !== '' ? curl_error($handle) : 'Unknown cURL error.');
         }
 
-        $statusCode = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 
         return new HttpResponse($statusCode, $body, $elapsedMs);
     }

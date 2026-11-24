@@ -60,7 +60,7 @@ final class MaintenanceScheduleListCommand implements CommandInterface
 
         if ($siteId !== null) {
             $site = $this->siteRepository->find($siteId);
-            if ($site === null) {
+            if (!$site instanceof \Uphptime\Site\Site) {
                 $this->output->writeErrorLine(json_encode(['error' => sprintf('No site with id "%s".', $siteId)], JSON_THROW_ON_ERROR));
 
                 return 1;
@@ -70,14 +70,12 @@ final class MaintenanceScheduleListCommand implements CommandInterface
         }
 
         $result = array_map(
-            function (MaintenanceSchedule $schedule) use ($sites): array {
-                return MaintenanceScheduleAddCommand::scheduleToArray($schedule) + [
-                    'assigned_site_ids' => array_values(array_map(
-                        static fn(Site $site): string => $site->id,
-                        array_filter($sites, static fn(Site $site): bool => in_array($schedule->id, $site->scheduleIds, true)),
-                    )),
-                ];
-            },
+            fn(MaintenanceSchedule $schedule): array => MaintenanceScheduleAddCommand::scheduleToArray($schedule) + [
+                'assigned_site_ids' => array_values(array_map(
+                    static fn(Site $site): string => $site->id,
+                    array_filter($sites, static fn(Site $site): bool => in_array($schedule->id, $site->scheduleIds, true)),
+                )),
+            ],
             $schedules,
         );
 

@@ -35,7 +35,9 @@ use Uphptime\Config\Config;
 final class PeerReputationScorer
 {
     private const CONFIRMATION_DISAGREE_TARGET = 60.0;
+
     private const EXCLUDED_TARGET              = 0.0;
+
     private const GOOD_TARGET                  = 100.0;
 
     public function __construct(private readonly Config $config) {}
@@ -95,7 +97,7 @@ final class PeerReputationScorer
     // A just-elapsed cooldown lands on probation, not neutral, so one more good or bad response decides it quickly.
     private function recoverIfCooldownElapsed(PeerReputation $reputation, DateTimeImmutable $now): PeerReputation
     {
-        if ($reputation->excludedUntil === null || $reputation->excludedUntil > $now) {
+        if (!$reputation->excludedUntil instanceof \DateTimeImmutable || $reputation->excludedUntil > $now) {
             return $reputation;
         }
 

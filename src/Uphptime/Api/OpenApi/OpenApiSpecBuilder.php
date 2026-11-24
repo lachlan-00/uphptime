@@ -47,7 +47,7 @@ final class OpenApiSpecBuilder
                     . 'token, deliberately unauthenticated), and to its own dashboard client (the report '
                     . 'API, a single bearer key). Generated from '
                     . 'Uphptime\\Api\\OpenApi\\OpenApiSpecBuilder - run "composer api:docs" after changing '
-                    . 'any action, the dispatcher, or public/index.php\'s routes.',
+                    . "any action, the dispatcher, or public/index.php's routes.",
             ],
             'servers' => [
                 [
@@ -64,7 +64,7 @@ final class OpenApiSpecBuilder
             'tags' => [
                 ['name' => 'peer', 'description' => 'HMAC-signed, pairwise-trusted peer-to-peer calls.'],
                 ['name' => 'challenge', 'description' => 'Unauthenticated result-attestation support.'],
-                ['name' => 'report', 'description' => 'Bearer-keyed read access for an owner\'s own dashboard client.'],
+                ['name' => 'report', 'description' => "Bearer-keyed read access for an owner's own dashboard client."],
             ],
             'paths' => [
                 '/peer/v1/check-site' => $this->checkSitePath(),
@@ -88,7 +88,7 @@ final class OpenApiSpecBuilder
                 'summary' => 'Fetch the current result-attestation challenge token for one site.',
                 'description' => 'Deliberately unauthenticated: the value returned is about to be made public '
                     . 'anyway, relayed onto the monitored site itself (as a response header or at '
-                    . '/.well-known/uphptime) by the admin\'s own web server config. 404s identically for an '
+                    . "/.well-known/uphptime) by the admin's own web server config. 404s identically for an "
                     . 'unknown site id and for a known site with no challenge delivery configured, so the '
                     . 'endpoint never confirms which site ids exist.',
                 'security' => [],
@@ -147,7 +147,7 @@ final class OpenApiSpecBuilder
                         'required' => true,
                         'schema' => ['type' => 'string'],
                         'example' => '1700000000',
-                        'description' => 'Current Unix timestamp in seconds; must be within the node\'s clock-skew window.',
+                        'description' => "Current Unix timestamp in seconds; must be within the node's clock-skew window.",
                     ],
                     [
                         'name' => SignatureHeaders::NONCE,
@@ -243,8 +243,8 @@ final class OpenApiSpecBuilder
             'get' => [
                 'operationId' => 'getReportOverview',
                 'tags' => ['report'],
-                'summary' => 'Every site\'s uptime % for one period, plus the merged overall figure.',
-                'description' => 'For an owner\'s own dashboard, not a peer - bearer-keyed, not HMAC. Reuses '
+                'summary' => "Every site's uptime % for one period, plus the merged overall figure.",
+                'description' => "For an owner's own dashboard, not a peer - bearer-keyed, not HMAC. Reuses "
                     . 'the exact same reporting math as "bin/uphptime report" and the daily rollups; an '
                     . 'empty "report_api_key" disables the route entirely (404) rather than leaving it '
                     . 'reachable with no real gate.',
@@ -275,7 +275,7 @@ final class OpenApiSpecBuilder
                         'in' => 'query',
                         'required' => false,
                         'schema' => ['type' => 'string'],
-                        'description' => 'Exact match against a site\'s configured groups; omitted = every site.',
+                        'description' => "Exact match against a site's configured groups; omitted = every site.",
                     ],
                 ],
                 'responses' => [
@@ -385,7 +385,7 @@ final class OpenApiSpecBuilder
             ],
             'ReportItem' => [
                 'type' => 'object',
-                'description' => 'One site\'s identity plus its uptime figures for the requested period.',
+                'description' => "One site's identity plus its uptime figures for the requested period.",
                 'required' => [
                     'id', 'name', 'groups', 'state', 'enabled',
                     'checks_total', 'checks_pass', 'checks_fail', 'checks_unknown', 'checks_excluded_maintenance',
@@ -471,9 +471,9 @@ final class OpenApiSpecBuilder
     private function signatureResponseHeaders(): array
     {
         return [
-            'X-Uphptime-Request-Id' => ['schema' => ['type' => 'string'], 'description' => 'Echoes the request\'s own X-Uphptime-Request-Id.'],
+            'X-Uphptime-Request-Id' => ['schema' => ['type' => 'string'], 'description' => "Echoes the request's own X-Uphptime-Request-Id."],
             'X-Uphptime-Response-Timestamp' => ['schema' => ['type' => 'string'], 'description' => 'Unix timestamp the response was signed at.'],
-            'X-Uphptime-Signature' => ['schema' => ['type' => 'string'], 'description' => 'HMAC-SHA256 over the response\'s own canonical string.'],
+            'X-Uphptime-Signature' => ['schema' => ['type' => 'string'], 'description' => "HMAC-SHA256 over the response's own canonical string."],
         ];
     }
 }

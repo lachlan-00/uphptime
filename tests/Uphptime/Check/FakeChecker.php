@@ -35,17 +35,8 @@ use Uphptime\Site\Site;
  */
 final class FakeChecker implements CheckerInterface
 {
-    /** @var CheckResult[] */
-    private array $queue;
-
-    private bool $throwsConfigurationError;
-
     /** @param CheckResult[] $queue */
-    public function __construct(array $queue = [], bool $throwsConfigurationError = false)
-    {
-        $this->queue                    = $queue;
-        $this->throwsConfigurationError = $throwsConfigurationError;
-    }
+    public function __construct(private array $queue = [], private readonly bool $throwsConfigurationError = false) {}
 
     public function check(Site $site, float $timeoutSeconds): CheckResult
     {

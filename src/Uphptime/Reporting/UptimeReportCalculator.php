@@ -51,7 +51,7 @@ final class UptimeReportCalculator
         if ($date !== $today) {
             $rollup = $this->rollupRepository->read($siteId, $date);
 
-            return $rollup !== null ? $this->fromRollups([$rollup]) : UptimeReport::empty();
+            return $rollup instanceof \Uphptime\History\DailyRollup ? $this->fromRollups([$rollup]) : UptimeReport::empty();
         }
 
         return $this->fromRecords($this->historyRepository->readDay($siteId, $date));
@@ -63,7 +63,7 @@ final class UptimeReportCalculator
         foreach ($this->rollupRepository->datesWithRollup($siteId) as $date) {
             if (str_starts_with($date, $yearMonth)) {
                 $rollup = $this->rollupRepository->read($siteId, $date);
-                if ($rollup !== null) {
+                if ($rollup instanceof \Uphptime\History\DailyRollup) {
                     $rollups[] = $rollup;
                 }
             }
@@ -81,7 +81,7 @@ final class UptimeReportCalculator
         $rollups = [];
         foreach ($this->rollupRepository->datesWithRollup($siteId) as $date) {
             $rollup = $this->rollupRepository->read($siteId, $date);
-            if ($rollup !== null) {
+            if ($rollup instanceof \Uphptime\History\DailyRollup) {
                 $rollups[] = $rollup;
             }
         }

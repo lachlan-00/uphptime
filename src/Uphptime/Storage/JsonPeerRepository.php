@@ -44,7 +44,7 @@ final class JsonPeerRepository implements PeerRepositoryInterface
     public function all(): array
     {
         return array_map(
-            fn(array $data): Peer => $this->peerFromArray($data),
+            $this->peerFromArray(...),
             $this->peersFrom($this->decodeFile($this->writer->read($this->path))),
         );
     }
@@ -217,7 +217,7 @@ final class JsonPeerRepository implements PeerRepositoryInterface
             'allow_outbound_delegation' => $peer->allowOutboundDelegation,
             'rate_limit_per_minute' => $peer->rateLimitPerMinute,
             'target_allowlist' => $peer->targetAllowlist,
-            'keys' => array_map(fn(PeerKey $key): array => $this->keyToArray($key), $peer->keys),
+            'keys' => array_map($this->keyToArray(...), $peer->keys),
         ];
     }
 }

@@ -54,7 +54,7 @@ final class MaintenanceScheduleRemoveCommand implements CommandInterface
             return 1;
         }
 
-        $removed = $this->maintenanceScheduleRepository->find($scheduleId) !== null;
+        $removed = $this->maintenanceScheduleRepository->find($scheduleId) instanceof \Uphptime\Site\MaintenanceSchedule;
         $this->maintenanceScheduleRepository->remove($scheduleId);
 
         $unassignedFrom = [];

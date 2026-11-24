@@ -65,6 +65,7 @@ final class ReportOverviewActionTest extends TestCase
         $sites    = new InMemorySiteRepository();
         $sites->save($this->site('a', []));
         $sites->save($this->site('b', []));
+
         $rollups  = new InMemoryRollupRepository();
         $rollups->write(new DailyRollup('a', '2026-01-01', 10, 10, 0, 0, 0, 10, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
         $rollups->write(new DailyRollup('b', '2026-01-01', 10, 5, 5, 0, 0, 10, 0, 50.0, null, null, new DateTimeImmutable('2026-01-02')));

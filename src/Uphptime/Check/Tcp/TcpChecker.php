@@ -48,8 +48,8 @@ final class TcpChecker implements CheckerInterface
 
         try {
             $this->client->connect($site->host, $site->port, $timeoutSeconds);
-        } catch (RuntimeException $exception) {
-            return CheckResult::fail($exception->getMessage());
+        } catch (RuntimeException $runtimeException) {
+            return CheckResult::fail($runtimeException->getMessage());
         }
 
         $elapsedMs = (int) round((microtime(true) - $start) * 1000);

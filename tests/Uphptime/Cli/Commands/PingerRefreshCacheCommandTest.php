@@ -66,6 +66,7 @@ final class PingerRefreshCacheCommandTest extends TestCase
         foreach (glob($directory . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir($directory);
     }
 }

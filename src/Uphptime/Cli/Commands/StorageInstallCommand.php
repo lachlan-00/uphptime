@@ -93,7 +93,7 @@ final class StorageInstallCommand implements CommandInterface
     /** @return string[] */
     private function statements(string $contents): array
     {
-        $statements = array_map('trim', explode(";\n", $contents));
+        $statements = array_map(trim(...), explode(";\n", $contents));
 
         return array_values(array_filter($statements, static fn(string $statement): bool => $statement !== ''));
     }

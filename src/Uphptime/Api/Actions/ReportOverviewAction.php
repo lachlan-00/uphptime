@@ -52,7 +52,7 @@ final class ReportOverviewAction implements ActionInterface
         $group  = isset($query['group']) && is_string($query['group']) && $query['group'] !== '' ? $query['group'] : null;
 
         $result = $this->builder->build($period, $date, $month, $group);
-        if ($result === null) {
+        if (!$result instanceof \Uphptime\Reporting\SiteReportSet) {
             return $this->jsonResponse(422, ['error' => 'invalid_period']);
         }
 
@@ -68,7 +68,7 @@ final class ReportOverviewAction implements ActionInterface
     private function jsonResponse(int $status, array $body): ResponseInterface
     {
         $response = $this->responseFactory->createResponse($status);
-        $response->getBody()->write((string) json_encode($body, JSON_THROW_ON_ERROR));
+        $response->getBody()->write(json_encode($body, JSON_THROW_ON_ERROR));
 
         return $response->withHeader('Content-Type', 'application/json');
     }

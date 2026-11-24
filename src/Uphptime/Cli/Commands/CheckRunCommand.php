@@ -51,6 +51,8 @@ final class CheckRunCommand implements CommandInterface
                 'error' => 'Another check:run is already in progress.',
                 'total_sites' => $snapshot->totalSites,
                 'skipped_due_to_overlap' => $snapshot->skippedDueToOverlap,
+                'disabled_sites' => $snapshot->disabledSites,
+                'not_due' => $snapshot->notDueSites,
             ], JSON_THROW_ON_ERROR));
 
             return 2;
@@ -66,6 +68,8 @@ final class CheckRunCommand implements CommandInterface
                 'checked' => $summary->checked,
                 'skipped_due_to_budget' => $summary->skippedDueToBudget,
                 'skipped_due_to_overlap' => $summary->skippedDueToOverlap,
+                'disabled_sites' => $summary->disabledSites,
+                'not_due' => $summary->notDueSites,
                 'rollups_closed' => $summary->rollupsClosed,
                 'pruned_files' => $summary->prunedFiles,
                 'duration_ms' => $summary->durationMs,

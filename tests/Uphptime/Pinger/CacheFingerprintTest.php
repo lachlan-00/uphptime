@@ -36,7 +36,27 @@ use Uphptime\Site\SiteState;
 
 final class CacheFingerprintTest extends TestCase
 {
-    private static function site(
+    public function testAnyDifferingFieldChangesTheHash(): void
+    {
+        $base = $this->site(CheckType::Http, 'http://example.test/');
+
+        self::assertNotSame(CacheFingerprint::forSite($base), CacheFingerprint::forSite($this->site(CheckType::Http, 'http://other.test/')));
+        self::assertNotSame(CacheFingerprint::forSite($base), CacheFingerprint::forSite($this->site(CheckType::Tcp, null, 'example.test', 25)));
+        self::assertNotSame(
+            CacheFingerprint::forSite($base),
+            CacheFingerprint::forSite($this->site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains)),
+        );
+    }
+
+    public function testIdenticalCheckRequestsHashIdentically(): void
+    {
+        $a = $this->site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains);
+        $b = $this->site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains);
+
+        self::assertSame(CacheFingerprint::forSite($a), CacheFingerprint::forSite($b));
+    }
+
+    private function site(
         CheckType $checkType,
         ?string $url,
         ?string $host = null,
@@ -47,25 +67,5 @@ final class CacheFingerprintTest extends TestCase
         $now = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
 
         return new Site('s', 's', $url, $host, $port, $checkType, $keyword, $keywordMode, null, true, $now, new SiteRuntimeState(SiteState::Unknown, 0, null, null, $now, null));
-    }
-
-    public function testAnyDifferingFieldChangesTheHash(): void
-    {
-        $base = self::site(CheckType::Http, 'http://example.test/');
-
-        self::assertNotSame(CacheFingerprint::forSite($base), CacheFingerprint::forSite(self::site(CheckType::Http, 'http://other.test/')));
-        self::assertNotSame(CacheFingerprint::forSite($base), CacheFingerprint::forSite(self::site(CheckType::Tcp, null, 'example.test', 25)));
-        self::assertNotSame(
-            CacheFingerprint::forSite($base),
-            CacheFingerprint::forSite(self::site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains)),
-        );
-    }
-
-    public function testIdenticalCheckRequestsHashIdentically(): void
-    {
-        $a = self::site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains);
-        $b = self::site(CheckType::HttpKeyword, 'http://example.test/', keyword: 'ok', keywordMode: KeywordMode::Contains);
-
-        self::assertSame(CacheFingerprint::forSite($a), CacheFingerprint::forSite($b));
     }
 }

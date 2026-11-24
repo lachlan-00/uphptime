@@ -42,7 +42,7 @@ final class TwoNodeHarness
     private readonly string $nodeADir;
     private readonly string $nodeBDir;
     private ?ContainerInterface $ownerContainer = null;
-    private SpawnedPhpServer $pingerServer;
+    private readonly SpawnedPhpServer $pingerServer;
     private readonly string $repoRoot;
     private readonly string $secret;
 
@@ -78,9 +78,7 @@ final class TwoNodeHarness
 
     public function ownerContainer(): ContainerInterface
     {
-        if ($this->ownerContainer === null) {
-            $this->ownerContainer = (new DicBuilder())->build($this->nodeAConfigPath());
-        }
+        $this->ownerContainer ??= (new DicBuilder())->build($this->nodeAConfigPath());
 
         return $this->ownerContainer;
     }
@@ -114,16 +112,19 @@ final class TwoNodeHarness
         foreach (glob($directory . '/*/*') ?: [] as $file) {
             @unlink($file);
         }
+
         foreach (glob($directory . '/*') ?: [] as $entry) {
             if (is_dir($entry)) {
                 foreach (glob($entry . '/*') ?: [] as $file) {
                     @unlink($file);
                 }
+
                 @rmdir($entry);
             } else {
                 @unlink($entry);
             }
         }
+
         @rmdir($directory);
     }
 

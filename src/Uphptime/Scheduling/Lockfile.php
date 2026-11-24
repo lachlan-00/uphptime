@@ -33,7 +33,7 @@ use RuntimeException;
 final class Lockfile
 {
     /** @var resource|null */
-    private $handle = null;
+    private $handle;
 
     public function __construct(private readonly string $path) {}
 

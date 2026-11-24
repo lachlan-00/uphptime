@@ -73,40 +73,29 @@ final class CheckRunnerTest extends TestCase
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
         $sites->save($this->site('b', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        $sites->save($this->site('disabled', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), enabled: false));
+        $sites->save($this->site('not-due-yet', new DateTimeImmutable('2026-01-01T00:20:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker([CheckResult::pass()]);
 
         $summary = $this->buildRunner($sites, $history, $clock, $checker, $this->config(runBudgetSeconds: 0))->run();
 
-        self::assertSame(2, $summary->totalSites);
+        self::assertSame(4, $summary->totalSites);
         self::assertSame(0, $summary->checked);
         self::assertSame(2, $summary->skippedDueToBudget);
         self::assertSame(0, $summary->skippedDueToOverlap, 'this run acquired the lock itself, so it saw no overlap');
+        self::assertSame(1, $summary->disabledSites);
+        self::assertSame(1, $summary->notDueSites);
+        self::assertSame(
+            $summary->totalSites,
+            $summary->checked + $summary->skippedDueToBudget + $summary->skippedDueToOverlap + $summary->disabledSites + $summary->notDueSites,
+            'every site must be accounted for by exactly one of these counters',
+        );
 
         $site = $sites->find('a');
         self::assertNotNull($site);
         self::assertEquals(new DateTimeImmutable('2026-01-01T00:00:00+00:00'), $site->state->nextDueAt, 'an unreached site keeps its old next_due_at');
-    }
-
-    public function testOverlapSnapshotReportsTotalAndDueSitesWithoutCheckingAny(): void
-    {
-        $clock = new FakeClock('2026-01-01T00:10:00+00:00');
-        $sites = new InMemorySiteRepository();
-        // Due.
-        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
-        // Not yet due.
-        $sites->save($this->site('b', new DateTimeImmutable('2026-01-01T00:20:00+00:00')));
-        $checker = new FakeChecker();
-        $runner  = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config());
-
-        $snapshot = $runner->overlapSnapshot();
-
-        self::assertSame(2, $snapshot->totalSites);
-        self::assertSame(0, $snapshot->checked);
-        self::assertSame(0, $snapshot->skippedDueToBudget);
-        self::assertSame(1, $snapshot->skippedDueToOverlap, 'only site a is due right now');
-        self::assertSame(0, $snapshot->rollupsClosed);
-        self::assertSame(0, $snapshot->prunedFiles);
     }
 
     public function testCanaryDisagreementUnresolvedWhenNoThirdPeerExistsLeavesSiteStateUntouched(): void
@@ -114,10 +103,12 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::pass(200, 10), 'k1', null, 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::fail('mismatch'), 'k1', null, 'none'),
@@ -141,11 +132,13 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
         $peers->save($this->peer('peer-c'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::pass(200, 10), 'k1', null, 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::fail('mismatch'), 'k1', null, 'none'),
@@ -173,9 +166,11 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'))->withChallengeDelivery(ChallengeDelivery::WellKnown));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::pass(200, 10), 'k1', ['resolved_ip' => '1.2.3.4', 'challenge_token_observed' => 'fixed-token'], 'none'),
         ]);
@@ -193,10 +188,12 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'))->withChallengeDelivery(ChallengeDelivery::WellKnown));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::pass(200, 10), 'k1', ['resolved_ip' => '1.2.3.4', 'challenge_token_observed' => 'wrong-token'], 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 11), 'k1', ['resolved_ip' => '1.2.3.4', 'challenge_token_observed' => 'fixed-token'], 'none'),
@@ -215,6 +212,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker(throwsConfigurationError: true);
 
@@ -235,10 +233,12 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 5), 'k1', null, 'none'),
@@ -274,6 +274,7 @@ final class CheckRunnerTest extends TestCase
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('later', new DateTimeImmutable('2026-01-01T00:05:00+00:00')));
         $sites->save($this->site('earlier', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker([CheckResult::pass(), CheckResult::pass()]);
 
@@ -291,9 +292,11 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
         ]);
@@ -337,9 +340,11 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', $clock->now(), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
+
         $reputations = new InMemoryPeerReputationRepository();
         $reputations->save(PeerReputation::neutral('peer-a')->withExclusion($clock->now()->modify('+1 hour'), 1));
 
@@ -354,10 +359,12 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
@@ -382,6 +389,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', $clock->now(), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::fail('bad_status', 503, 5)]), $this->config())->run();
 
@@ -395,6 +403,7 @@ final class CheckRunnerTest extends TestCase
         $sites = new InMemorySiteRepository();
         // A site that was due at 00:00 but missed several 5-minute ticks (cron was skipped for 2 hours).
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker([CheckResult::pass()]);
 
@@ -415,6 +424,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:03+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker([CheckResult::pass(), CheckResult::pass(), CheckResult::pass()]);
         $runner  = $this->buildRunner($sites, $history, $clock, $checker, $this->config());
@@ -426,7 +436,7 @@ final class CheckRunnerTest extends TestCase
         // This tick fires 2 seconds early relative to the nominal 00:05:00 mark.
         $clock->advance('+4 minutes 59 seconds');
         $summary = $runner->run();
-        self::assertSame(1, $summary->checked, 'must still be due on schedule, not skipped by the previous run\'s latency');
+        self::assertSame(1, $summary->checked, "must still be due on schedule, not skipped by the previous run's latency");
         self::assertEquals(new DateTimeImmutable('2026-01-01T00:10:00+00:00'), $sites->find('a')->state->nextDueAt);
 
         // A third tick, with only 1 second of latency this time, must land on the same fixed grid.
@@ -438,15 +448,47 @@ final class CheckRunnerTest extends TestCase
         self::assertCount(3, $history->readDay('a', '2026-01-01'), 'one check per tick - the fix must never skip a tick nor spam extra checks to catch up');
     }
 
+    public function testOverlapSnapshotReportsTotalAndDueSitesWithoutCheckingAny(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:10:00+00:00');
+        $sites = new InMemorySiteRepository();
+        // Due.
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        // Not yet due.
+        $sites->save($this->site('b', new DateTimeImmutable('2026-01-01T00:20:00+00:00')));
+        // Disabled, never due regardless of next_due_at.
+        $sites->save($this->site('c', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), enabled: false));
+
+        $checker = new FakeChecker();
+        $runner  = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config());
+
+        $snapshot = $runner->overlapSnapshot();
+
+        self::assertSame(3, $snapshot->totalSites);
+        self::assertSame(0, $snapshot->checked);
+        self::assertSame(0, $snapshot->skippedDueToBudget);
+        self::assertSame(1, $snapshot->skippedDueToOverlap, 'only site a is due right now');
+        self::assertSame(1, $snapshot->disabledSites);
+        self::assertSame(1, $snapshot->notDueSites);
+        self::assertSame(
+            $snapshot->totalSites,
+            $snapshot->checked + $snapshot->skippedDueToBudget + $snapshot->skippedDueToOverlap + $snapshot->disabledSites + $snapshot->notDueSites,
+        );
+        self::assertSame(0, $snapshot->rollupsClosed);
+        self::assertSame(0, $snapshot->prunedFiles);
+    }
+
     public function testPeerErrorReplyTriesTheNextPeerBeforeFallingBack(): void
     {
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::error('target_not_allowed_for_peer'), 'k1', null, 'none'),
             'peer-b' => new DelegatedCheckResult(CheckResult::pass(200, 5), 'k1', null, 'none'),
@@ -465,9 +507,11 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', $clock->now(), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
+
         $peerClient = FakePeerCheckClient::returning(new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'));
 
         $this->buildRunner($sites, $history, $clock, new FakeChecker([CheckResult::fail('Network is unreachable')]), $this->config(), $peers, $peerClient)->run();
@@ -487,9 +531,11 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
+
         $peerClient = FakePeerCheckClient::returning(new DelegatedCheckResult(CheckResult::pass(200, 10), 'k1', ['resolved_ip' => '1.2.3.4'], 'none'));
 
         $this->buildRunner($sites, $history, $clock, new FakeChecker(), $this->config(), $peers, $peerClient)->run();
@@ -513,6 +559,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', $clock->now(), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $checker = new FakeChecker([CheckResult::fail('Connection timed out'), CheckResult::pass(200, 1)]);
         $runner  = $this->buildRunner($sites, $history, $clock, $checker, $this->config());
@@ -552,6 +599,7 @@ final class CheckRunnerTest extends TestCase
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('fast', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
         $sites->save($this->site('slow', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         // 'slow' takes 6 simulated minutes to check, past the 5-minute slot both sites shared.
         $checker = new class ($clock) implements CheckerInterface {
@@ -585,12 +633,14 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
         $peers->save($this->peer('peer-b'));
         $peers->save($this->peer('peer-c'));
         $peers->save($this->peer('peer-d'));
+
         $peerClient = FakePeerCheckClient::byPeerId([
             'peer-a' => new DelegatedCheckResult(CheckResult::fail('timeout'), 'k1', null, 'none'),
             'peer-b' => null,
@@ -622,6 +672,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
@@ -640,6 +691,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
@@ -661,6 +713,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), SiteState::Up));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $peers->save($this->peer('peer-a'));
@@ -681,6 +734,7 @@ final class CheckRunnerTest extends TestCase
         $clock = new FakeClock('2026-01-01T00:00:00+00:00');
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+
         $history = new InMemoryHistoryRepository();
         $peers   = new InMemoryPeerRepository();
         $checker = new FakeChecker([CheckResult::pass()]);
@@ -703,7 +757,7 @@ final class CheckRunnerTest extends TestCase
         InMemoryChallengeTokenStore $challengeTokenStore,
         CheckerInterface $httpChecker,
     ): array {
-        if ($peers === null || $peerClient === null) {
+        if (!$peers instanceof \Uphptime\Tests\Storage\InMemoryPeerRepository || !$peerClient instanceof \Uphptime\Tests\Api\Client\FakePeerCheckClient) {
             return [null, null, null, null];
         }
 
@@ -784,7 +838,7 @@ final class CheckRunnerTest extends TestCase
         );
     }
 
-    private function site(string $id, DateTimeImmutable $nextDueAt, SiteState $status = SiteState::Unknown): Site
+    private function site(string $id, DateTimeImmutable $nextDueAt, SiteState $status = SiteState::Unknown, bool $enabled = true): Site
     {
         $created = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
 
@@ -798,7 +852,7 @@ final class CheckRunnerTest extends TestCase
             null,
             null,
             null,
-            true,
+            $enabled,
             $created,
             new SiteRuntimeState($status, 0, null, null, $nextDueAt, null),
         );

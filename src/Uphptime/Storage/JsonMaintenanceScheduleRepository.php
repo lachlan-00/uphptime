@@ -44,7 +44,7 @@ final class JsonMaintenanceScheduleRepository implements MaintenanceScheduleRepo
     public function all(): array
     {
         return array_map(
-            fn(array $data): MaintenanceSchedule => $this->scheduleFromArray($data),
+            $this->scheduleFromArray(...),
             $this->schedulesFrom($this->decodeFile($this->writer->read($this->path))),
         );
     }

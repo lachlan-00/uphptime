@@ -58,7 +58,7 @@ final class PeersKeysAddCommand implements CommandInterface
         }
 
         $peer = $this->peerRepository->find($peerId);
-        if ($peer === null) {
+        if (!$peer instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $peerId)], JSON_THROW_ON_ERROR));
 
             return 1;
@@ -67,7 +67,7 @@ final class PeersKeysAddCommand implements CommandInterface
         try {
             $direction       = PeerKeyDirection::from($options['key-direction'] ?? 'both');
             [$wantsOutbound] = $direction->flags();
-            if ($wantsOutbound && $peer->outboundKey() !== null && !isset($options['allow-multiple-outbound'])) {
+            if ($wantsOutbound && $peer->outboundKey() instanceof \Uphptime\Peer\PeerKey && !isset($options['allow-multiple-outbound'])) {
                 throw new InvalidArgumentException('An active outbound key already exists - use peers:keys:rotate, or pass --allow-multiple-outbound.');
             }
 

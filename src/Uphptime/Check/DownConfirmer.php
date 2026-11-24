@@ -55,7 +55,7 @@ final class DownConfirmer
 
     public function confirm(Site $site, AcquiredPeerResult $primary, float $timeoutSeconds): ConfirmationOutcome
     {
-        if ($this->peerSelector->pick([(string) $primary->peer?->id]) === null) {
+        if (!$this->peerSelector->pick([(string) $primary->peer?->id]) instanceof \Uphptime\Peer\Peer) {
             return $this->confirmBySelfCheck($site);
         }
 
@@ -63,7 +63,7 @@ final class DownConfirmer
 
         for ($attempt = 0; $attempt < $this->maxAttempts; $attempt++) {
             $peer = $this->peerSelector->pick($excluded);
-            if ($peer === null) {
+            if (!$peer instanceof \Uphptime\Peer\Peer) {
                 break;
             }
 
@@ -143,8 +143,8 @@ final class DownConfirmer
 
         try {
             return $checker->check($site, (float) $this->config->requestTimeoutSeconds);
-        } catch (CheckConfigurationException $exception) {
-            return CheckResult::error($exception->getMessage());
+        } catch (CheckConfigurationException $checkConfigurationException) {
+            return CheckResult::error($checkConfigurationException->getMessage());
         }
     }
 }

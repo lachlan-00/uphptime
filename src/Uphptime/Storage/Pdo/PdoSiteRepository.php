@@ -59,7 +59,7 @@ final class PdoSiteRepository implements SiteRepositoryInterface
     public function all(): array
     {
         return array_map(
-            fn(array $row): Site => $this->fromRow($row),
+            $this->fromRow(...),
             $this->query('SELECT * FROM sites ORDER BY next_due_at ASC'),
         );
     }
@@ -86,12 +86,12 @@ final class PdoSiteRepository implements SiteRepositoryInterface
             $this->replaceScheduleAssignments($site);
             $this->replaceGroups($site);
             $this->pdo->commit();
-        } catch (PDOException $exception) {
+        } catch (PDOException $pdoException) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
 
-            PdoExceptionTranslator::translate($exception);
+            PdoExceptionTranslator::translate($pdoException);
         }
     }
 
@@ -216,9 +216,9 @@ final class PdoSiteRepository implements SiteRepositoryInterface
             $site->state->status->value,
             $site->state->consecutiveFails,
             $site->state->lastOutcome?->value,
-            $site->state->lastCheckedAt !== null ? PdoTimestamp::format($site->state->lastCheckedAt) : null,
+            $site->state->lastCheckedAt instanceof \DateTimeImmutable ? PdoTimestamp::format($site->state->lastCheckedAt) : null,
             PdoTimestamp::format($site->state->nextDueAt),
-            $site->state->lastTransitionAt !== null ? PdoTimestamp::format($site->state->lastTransitionAt) : null,
+            $site->state->lastTransitionAt instanceof \DateTimeImmutable ? PdoTimestamp::format($site->state->lastTransitionAt) : null,
             $site->challengeDelivery?->value,
         ]);
     }

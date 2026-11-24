@@ -45,6 +45,7 @@ final class PeersReputationResetCommandTest extends TestCase
         (new PeersAddCommand($peers, new PeerKeyOptionResolver(new FakeClock()), new FakeConsoleOutput()))->run(['--id=node-b', '--label=Node B']);
         $reputations = new InMemoryPeerReputationRepository();
         $reputations->save(new PeerReputation('node-b', 10.0, 3, new DateTimeImmutable('2026-01-01T01:00:00+00:00'), new DateTimeImmutable('2026-01-01T00:00:00+00:00'), 9));
+
         $config = new Config('data', 300, 90, 10, 240, 900, 'uphptime-test', 'UTC');
 
         $exitCode = (new PeersReputationResetCommand($peers, $reputations, $config, new FakeConsoleOutput()))->run(['--id=node-b']);

@@ -80,27 +80,25 @@ return [
             $config->canarySampleRate,
         );
     }),
-    CheckRunner::class => factory(static function (ContainerInterface $c): CheckRunner {
-        return new CheckRunner(
-            $c->get(SiteRepositoryInterface::class),
-            $c->get(HistoryRepositoryInterface::class),
-            $c->get(MaintenanceScheduleRepositoryInterface::class),
-            $c->get(SiteStateMachine::class),
-            $c->get(RollupBuilder::class),
-            $c->get(RetentionPruner::class),
-            $c->get(ClockInterface::class),
-            $c->get(Config::class),
-            $c->get(ChallengeTokenStoreInterface::class),
-            $c->get('check.self.http_checker'),
-            $c->get('check.self.http_keyword_checker'),
-            $c->get('check.self.tcp_checker'),
-            $c->get('check.self.icmp_checker'),
-            $c->get(PeerSelectorInterface::class),
-            $c->get(PeerResultAcquirer::class),
-            $c->get(DownConfirmer::class),
-            $c->get(CanarySampler::class),
-        );
-    }),
+    CheckRunner::class => factory(static fn(ContainerInterface $c): CheckRunner => new CheckRunner(
+        $c->get(SiteRepositoryInterface::class),
+        $c->get(HistoryRepositoryInterface::class),
+        $c->get(MaintenanceScheduleRepositoryInterface::class),
+        $c->get(SiteStateMachine::class),
+        $c->get(RollupBuilder::class),
+        $c->get(RetentionPruner::class),
+        $c->get(ClockInterface::class),
+        $c->get(Config::class),
+        $c->get(ChallengeTokenStoreInterface::class),
+        $c->get('check.self.http_checker'),
+        $c->get('check.self.http_keyword_checker'),
+        $c->get('check.self.tcp_checker'),
+        $c->get('check.self.icmp_checker'),
+        $c->get(PeerSelectorInterface::class),
+        $c->get(PeerResultAcquirer::class),
+        $c->get(DownConfirmer::class),
+        $c->get(CanarySampler::class),
+    )),
     DownConfirmer::class => factory(static function (ContainerInterface $c): DownConfirmer {
         $config = $c->get(Config::class);
 
@@ -121,17 +119,15 @@ return [
             $config->maxDelegatesPerAcquisition,
         );
     }),
-    PeerResultAcquirer::class => factory(static function (ContainerInterface $c): PeerResultAcquirer {
-        return new PeerResultAcquirer(
-            $c->get(PeerSelectorInterface::class),
-            $c->get(PeerCheckClientInterface::class),
-            $c->get(PeerReputationRepositoryInterface::class),
-            $c->get(PeerReputationScorer::class),
-            $c->get(ClockInterface::class),
-            $c->get(AttestationVerifier::class),
-            $c->get(Config::class)->maxDelegatesPerAcquisition,
-        );
-    }),
+    PeerResultAcquirer::class => factory(static fn(ContainerInterface $c): PeerResultAcquirer => new PeerResultAcquirer(
+        $c->get(PeerSelectorInterface::class),
+        $c->get(PeerCheckClientInterface::class),
+        $c->get(PeerReputationRepositoryInterface::class),
+        $c->get(PeerReputationScorer::class),
+        $c->get(ClockInterface::class),
+        $c->get(AttestationVerifier::class),
+        $c->get(Config::class)->maxDelegatesPerAcquisition,
+    )),
     RetentionPruner::class => autowire(),
     RollupBuilder::class => autowire(),
     SiteStateMachine::class => autowire(),

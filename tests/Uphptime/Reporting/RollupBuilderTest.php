@@ -46,11 +46,13 @@ final class RollupBuilderTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('site-1'));
+
         $history = new InMemoryHistoryRepository();
         $history->append('site-1', $this->record('2026-01-01T00:00:00+00:00', CheckOutcome::Pass));
         $history->append('site-1', $this->record('2026-01-01T00:05:00+00:00', CheckOutcome::Pass));
         $history->append('site-1', $this->record('2026-01-01T00:10:00+00:00', CheckOutcome::Fail));
         $history->append('site-1', $this->record('2026-01-01T00:15:00+00:00', CheckOutcome::Error));
+
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock('2026-01-02T00:00:00+00:00');
 
@@ -70,8 +72,10 @@ final class RollupBuilderTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('site-1'));
+
         $history = new InMemoryHistoryRepository();
         $history->append('site-1', $this->record('2026-01-01T00:00:00+00:00', CheckOutcome::Pass));
+
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock('2026-01-02T00:00:00+00:00');
         $builder = new RollupBuilder($sites, $history, $rollups, $clock);
@@ -84,12 +88,14 @@ final class RollupBuilderTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('site-1'));
+
         $history = new InMemoryHistoryRepository();
         $history->append('site-1', $this->record('2026-01-01T00:00:00+00:00', CheckOutcome::Fail));
         $history->append('site-1', $this->record('2026-01-01T00:00:01+00:00', CheckOutcome::Fail, role: HistoryRecordRole::Confirmation));
         $history->append('site-1', $this->record('2026-01-01T00:05:00+00:00', CheckOutcome::Pass));
         $history->append('site-1', $this->record('2026-01-01T00:05:01+00:00', CheckOutcome::Pass, role: HistoryRecordRole::Canary));
         $history->append('site-1', $this->record('2026-01-01T00:05:02+00:00', CheckOutcome::Pass, role: HistoryRecordRole::TieBreak));
+
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock('2026-01-02T00:00:00+00:00');
 
@@ -106,8 +112,10 @@ final class RollupBuilderTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('site-1'));
+
         $history = new InMemoryHistoryRepository();
         $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Pass));
+
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock('2026-01-02T12:00:00+00:00');
 

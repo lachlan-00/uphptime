@@ -55,13 +55,13 @@ final class MaintenanceScheduleAssignCommand implements CommandInterface
         }
 
         $site = $this->siteRepository->find($siteId);
-        if ($site === null) {
+        if (!$site instanceof \Uphptime\Site\Site) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No site with id "%s".', $siteId)], JSON_THROW_ON_ERROR));
 
             return 1;
         }
 
-        if ($this->maintenanceScheduleRepository->find($scheduleId) === null) {
+        if (!$this->maintenanceScheduleRepository->find($scheduleId) instanceof \Uphptime\Site\MaintenanceSchedule) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No maintenance schedule with id "%s".', $scheduleId)], JSON_THROW_ON_ERROR));
 
             return 1;

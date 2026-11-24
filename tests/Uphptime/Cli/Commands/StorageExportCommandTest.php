@@ -57,6 +57,7 @@ final class StorageExportCommandTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site());
+
         $output = new FakeConsoleOutput();
 
         $exitCode = $this->command($sites, $output)->run(['--dir=' . $this->dir]);
@@ -77,6 +78,7 @@ final class StorageExportCommandTest extends TestCase
 
         $secondSites = new InMemorySiteRepository();
         $secondSites->save($this->site('site-a'));
+
         $output   = new FakeConsoleOutput();
         $exitCode = $this->command($secondSites, $output)->run(['--dir=' . $this->dir, '--force']);
 

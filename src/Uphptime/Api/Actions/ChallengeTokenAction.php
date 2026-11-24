@@ -54,7 +54,7 @@ final class ChallengeTokenAction implements ActionInterface
         $siteId = $request->getAttribute('uphptime.site_id');
         $site   = is_string($siteId) ? $this->siteRepository->find($siteId) : null;
 
-        if ($site === null || !$site->usesChallengeToken()) {
+        if (!$site instanceof \Uphptime\Site\Site || !$site->usesChallengeToken()) {
             return $this->jsonResponse(404, ['error' => 'not_found']);
         }
 
@@ -71,7 +71,7 @@ final class ChallengeTokenAction implements ActionInterface
     private function jsonResponse(int $status, array $body): ResponseInterface
     {
         $response = $this->responseFactory->createResponse($status);
-        $response->getBody()->write((string) json_encode($body, JSON_THROW_ON_ERROR));
+        $response->getBody()->write(json_encode($body, JSON_THROW_ON_ERROR));
 
         return $response->withHeader('Content-Type', 'application/json');
     }

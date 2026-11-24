@@ -153,9 +153,11 @@ final class StorageMigrateTimezoneCommandTest extends TestCase
         foreach (glob($this->dataDirectory . '/history/*/*') ?: [] as $file) {
             unlink($file);
         }
+
         foreach (glob($this->dataDirectory . '/history/*') ?: [] as $dir) {
             @rmdir($dir);
         }
+
         @rmdir($this->dataDirectory . '/history');
         @rmdir($this->dataDirectory);
     }

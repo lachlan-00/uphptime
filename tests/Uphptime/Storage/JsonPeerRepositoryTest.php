@@ -81,6 +81,7 @@ final class JsonPeerRepositoryTest extends TestCase
         foreach ($processes as $process) {
             proc_close($process);
         }
+
         @unlink($script);
 
         $ids = array_map(static fn(Peer $peer): string => $peer->id, $repository->all());

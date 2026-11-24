@@ -70,7 +70,7 @@ final class ReportApiKeyMiddleware implements MiddlewareInterface
     private function jsonResponse(int $status, array $body): ResponseInterface
     {
         $response = $this->responseFactory->createResponse($status);
-        $response->getBody()->write((string) json_encode($body, JSON_THROW_ON_ERROR));
+        $response->getBody()->write(json_encode($body, JSON_THROW_ON_ERROR));
 
         return $response->withHeader('Content-Type', 'application/json');
     }

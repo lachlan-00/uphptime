@@ -41,8 +41,8 @@ trait PdoAccess
     {
         try {
             $this->rawExecute($sql, $params);
-        } catch (PDOException $exception) {
-            PdoExceptionTranslator::translate($exception);
+        } catch (PDOException $pdoException) {
+            PdoExceptionTranslator::translate($pdoException);
         }
     }
 
@@ -54,8 +54,8 @@ trait PdoAccess
     {
         try {
             return $this->rawQuery($sql, $params);
-        } catch (PDOException $exception) {
-            PdoExceptionTranslator::translate($exception);
+        } catch (PDOException $pdoException) {
+            PdoExceptionTranslator::translate($pdoException);
         }
     }
 

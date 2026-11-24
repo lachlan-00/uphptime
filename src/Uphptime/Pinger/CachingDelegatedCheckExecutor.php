@@ -55,7 +55,7 @@ final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInter
         $now         = $this->clock->now();
         $fingerprint = CacheFingerprint::forSite($site);
 
-        if ($this->repository->find($fingerprint) === null) {
+        if (!$this->repository->find($fingerprint) instanceof \Uphptime\Pinger\Cache\CheckCacheEntry) {
             $this->evictIfAtCapacity();
         }
 
@@ -91,7 +91,7 @@ final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInter
         }
 
         $victim = $this->repository->findLeastRecentlyRequested();
-        if ($victim !== null) {
+        if ($victim instanceof \Uphptime\Pinger\Cache\CheckCacheEntry) {
             $this->repository->delete($victim->fingerprint);
         }
     }
@@ -99,7 +99,7 @@ final class CachingDelegatedCheckExecutor implements DelegatedCheckExecutorInter
     // Re-checks the calling peer's target allowlist against the resolved IP, since a cache hit skips the live probe's own check.
     private function isTargetStillAllowedForCaller(Site $site, ?Peer $callingPeer, CheckCacheEntry $entry): bool
     {
-        if ($callingPeer === null || $callingPeer->targetAllowlist === []) {
+        if (!$callingPeer instanceof \Uphptime\Peer\Peer || $callingPeer->targetAllowlist === []) {
             return true;
         }
 

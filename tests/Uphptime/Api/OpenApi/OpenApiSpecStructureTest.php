@@ -108,10 +108,12 @@ final class OpenApiSpecStructureTest extends TestCase
             } else {
                 self::assertNotEmpty($payload['host']);
             }
+
             if ($type === 'http_keyword') {
                 self::assertNotEmpty($payload['keyword']);
                 self::assertContains($payload['keyword_mode'], ['contains', 'not_contains']);
             }
+
             if ($type === 'tcp') {
                 self::assertGreaterThan(0, $payload['port']);
             }
@@ -133,6 +135,7 @@ final class OpenApiSpecStructureTest extends TestCase
                 $refs[] = $value;
                 continue;
             }
+
             $refs = [...$refs, ...$this->collectRefs($value)];
         }
 

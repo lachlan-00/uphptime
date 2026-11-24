@@ -68,7 +68,7 @@ final class CanarySampler
         $primaryPeerId = (string) $primary->peer?->id;
         $canary        = $this->acquireCandidate($site, [$primaryPeerId]);
 
-        if ($canary === null) {
+        if (!$canary instanceof \Uphptime\Check\AcquiredPeerResult) {
             $record = $this->record($site, CheckResult::error('canary_unavailable'), $checkedAt, 'canary', null, 'none', $resultingStatus);
 
             return CanarySampleOutcome::attemptFailed($record);
@@ -86,7 +86,7 @@ final class CanarySampler
 
         $tieBreak = $this->acquireCandidate($site, array_values(array_filter([$primaryPeerId, $canaryPeerId], static fn(string $id): bool => $id !== '')), allowSelfFallback: false);
 
-        if ($tieBreak === null) {
+        if (!$tieBreak instanceof \Uphptime\Check\AcquiredPeerResult) {
             return CanarySampleOutcome::disagreedUnresolved($canaryRecord);
         }
 
@@ -110,7 +110,7 @@ final class CanarySampler
     /** @param string[] $excludePeerIds */
     private function acquireCandidate(Site $site, array $excludePeerIds, bool $allowSelfFallback = true): ?AcquiredPeerResult
     {
-        if ($this->peerSelector->pick($excludePeerIds) === null) {
+        if (!$this->peerSelector->pick($excludePeerIds) instanceof \Uphptime\Peer\Peer) {
             return $allowSelfFallback ? new AcquiredPeerResult(null, null, $this->selfCheck($site), null, 'none') : null;
         }
 
@@ -180,8 +180,8 @@ final class CanarySampler
 
         try {
             return $checker->check($site, (float) $this->config->requestTimeoutSeconds);
-        } catch (CheckConfigurationException $exception) {
-            return CheckResult::error($exception->getMessage());
+        } catch (CheckConfigurationException $checkConfigurationException) {
+            return CheckResult::error($checkConfigurationException->getMessage());
         }
     }
 }

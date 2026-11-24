@@ -54,7 +54,7 @@ final class PeersAllowlistRemoveCommand implements CommandInterface
         }
 
         $peer = $this->peerRepository->find($id);
-        if ($peer === null) {
+        if (!$peer instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $id)], JSON_THROW_ON_ERROR));
 
             return 1;

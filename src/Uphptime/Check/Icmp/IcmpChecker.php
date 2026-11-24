@@ -46,8 +46,8 @@ final class IcmpChecker implements CheckerInterface
 
         try {
             $rttMs = $this->client->ping($site->host, $timeoutSeconds);
-        } catch (RuntimeException $exception) {
-            return CheckResult::fail($exception->getMessage());
+        } catch (RuntimeException $runtimeException) {
+            return CheckResult::fail($runtimeException->getMessage());
         }
 
         return CheckResult::pass(null, $rttMs);

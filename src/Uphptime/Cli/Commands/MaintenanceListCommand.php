@@ -54,7 +54,7 @@ final class MaintenanceListCommand implements CommandInterface
         }
 
         $site = $this->siteRepository->find($siteId);
-        if ($site === null) {
+        if (!$site instanceof \Uphptime\Site\Site) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No site with id "%s".', $siteId)], JSON_THROW_ON_ERROR));
 
             return 1;

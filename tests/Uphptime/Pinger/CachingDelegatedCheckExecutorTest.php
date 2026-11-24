@@ -53,6 +53,7 @@ final class CachingDelegatedCheckExecutorTest extends TestCase
         $executor = $this->executor($inner, $clock, ttlSeconds: 60);
 
         $executor->execute($this->site(), null, 5.0);
+
         $clock->advance('+61 seconds');
         $executor->execute($this->site(), null, 5.0);
 
@@ -120,6 +121,7 @@ final class CachingDelegatedCheckExecutorTest extends TestCase
         foreach (glob($this->directory . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir($this->directory);
     }
 

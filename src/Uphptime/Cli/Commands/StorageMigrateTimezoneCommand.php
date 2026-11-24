@@ -104,7 +104,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
         }
 
         $sites = $this->sites->all();
-        if (!$sites) {
+        if ($sites === []) {
             $this->output->writeLine(json_encode([
                 'message' => 'No sites configured — nothing to migrate.',
             ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
@@ -140,7 +140,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
                 }
             }
 
-            if (!$files) {
+            if ($files === []) {
                 continue;
             }
 
@@ -188,7 +188,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
             }
 
             // Quality check: a migration only redistributes/dedupes, never invents records - if the rebuild would write more than it read, abort this site untouched instead of risking its data.
-            $totalToWrite = array_sum(array_map('count', $dedupedByDate));
+            $totalToWrite = array_sum(array_map(count(...), $dedupedByDate));
             if ($totalToWrite > $totalRead) {
                 $stats['errors'][] = sprintf(
                     'Site %s: refusing to write - rebuilding would produce %d records from %d read; left its history untouched.',

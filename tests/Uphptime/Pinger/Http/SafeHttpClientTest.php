@@ -48,37 +48,37 @@ final class SafeHttpClientTest extends TestCase
         self::$docRoot = sys_get_temp_dir() . '/uphptime-safe-http-' . bin2hex(random_bytes(4));
         mkdir(self::$docRoot, 0775, true);
 
-        file_put_contents(self::$docRoot . '/router.php', <<<'PHP'
-            <?php
-            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            if ($path === '/agent') {
-                echo $_SERVER['HTTP_USER_AGENT'] ?? '';
-                exit;
-            }
-            if ($path === '/redirect-to') {
-                parse_str($_SERVER['QUERY_STRING'] ?? '', $query);
-                header('Location: http://' . $query['host'] . ':' . $query['port'] . '/hello', true, 302);
-                exit;
-            }
-            if ($path === '/redirect-malformed') {
-                header('Location: http://user:password@safe.test:' . $_SERVER['SERVER_PORT'] . '/failure?token=secret value#fragment', true, 302);
-                exit;
-            }
-            if ($path === '/big') {
-                echo str_repeat('x', 1000);
-                exit;
-            }
-            if ($path === '/header-challenge') {
-                header('X-Uphptime-Challenge: observed-via-header');
-                echo 'hello-world';
-                exit;
-            }
-            if ($path === '/.well-known/uphptime') {
-                echo 'observed-via-well-known';
-                exit;
-            }
+        file_put_contents(self::$docRoot . '/router.php', <<<'PHP_WRAP'
+        <?php
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        if ($path === '/agent') {
+            echo $_SERVER['HTTP_USER_AGENT'] ?? '';
+            exit;
+        }
+        if ($path === '/redirect-to') {
+            parse_str($_SERVER['QUERY_STRING'] ?? '', $query);
+            header('Location: http://' . $query['host'] . ':' . $query['port'] . '/hello', true, 302);
+            exit;
+        }
+        if ($path === '/redirect-malformed') {
+            header('Location: http://user:password@safe.test:' . $_SERVER['SERVER_PORT'] . '/failure?token=secret value#fragment', true, 302);
+            exit;
+        }
+        if ($path === '/big') {
+            echo str_repeat('x', 1000);
+            exit;
+        }
+        if ($path === '/header-challenge') {
+            header('X-Uphptime-Challenge: observed-via-header');
             echo 'hello-world';
-            PHP);
+            exit;
+        }
+        if ($path === '/.well-known/uphptime') {
+            echo 'observed-via-well-known';
+            exit;
+        }
+        echo 'hello-world';
+        PHP_WRAP);
 
         self::$server = new SpawnedPhpServer(self::$docRoot, self::$docRoot . '/router.php');
     }
@@ -89,6 +89,7 @@ final class SafeHttpClientTest extends TestCase
         foreach (glob(self::$docRoot . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir(self::$docRoot);
     }
 
@@ -142,6 +143,7 @@ final class SafeHttpClientTest extends TestCase
             if ($previousLog !== false) {
                 ini_set('error_log', $previousLog);
             }
+
             unlink($logFile);
         }
     }

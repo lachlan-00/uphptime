@@ -47,6 +47,7 @@ final class ChallengeTokenActionTest extends TestCase
     {
         $sites  = new InMemorySiteRepository();
         $sites->save($this->site('site-a', ChallengeDelivery::WellKnown));
+
         $tokens = new InMemoryChallengeTokenStore();
         $issued = $tokens->issue('site-a', new DateTimeImmutable('2026-01-01T00:00:00+00:00'), 300);
 
@@ -61,6 +62,7 @@ final class ChallengeTokenActionTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site('site-a', ChallengeDelivery::Header));
+
         $action = $this->action($sites, new InMemoryChallengeTokenStore());
 
         $response = $action->handle($this->requestFor('site-a'));

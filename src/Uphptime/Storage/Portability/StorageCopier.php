@@ -65,7 +65,7 @@ final class StorageCopier
 
             foreach ($source->rollups->datesWithRollup($site->id) as $date) {
                 $rollup = $source->rollups->read($site->id, $date);
-                if ($rollup !== null) {
+                if ($rollup instanceof \Uphptime\History\DailyRollup) {
                     $destination->rollups->write($rollup);
                     $rollups++;
                 }

@@ -57,13 +57,11 @@ return [
     ChallengeTokenStoreInterface::class => factory(
         static fn(ContainerInterface $c): ChallengeTokenStoreInterface => new JsonChallengeTokenStore($c->get(AtomicWriter::class), $c->get('data.dir') . '/challenge_tokens'),
     ),
-    CheckSiteAction::class => factory(static function (ContainerInterface $c): CheckSiteAction {
-        return new CheckSiteAction(
-            $c->get(DelegatedCheckExecutorInterface::class),
-            $c->get(Config::class)->pingerMaxTimeoutSeconds,
-            $c->get(ResponseFactoryInterface::class),
-        );
-    }),
+    CheckSiteAction::class => factory(static fn(ContainerInterface $c): CheckSiteAction => new CheckSiteAction(
+        $c->get(DelegatedCheckExecutorInterface::class),
+        $c->get(Config::class)->pingerMaxTimeoutSeconds,
+        $c->get(ResponseFactoryInterface::class),
+    )),
     ClockSkewValidator::class => autowire(),
     Dispatcher::class => factory(static fn(ContainerInterface $c): Dispatcher => new Dispatcher([
         'peer.check_site' => $c->get(CheckSiteAction::class),

@@ -50,7 +50,7 @@ final class JsonSiteRepository implements SiteRepositoryInterface
     public function all(): array
     {
         return array_map(
-            fn(array $data): Site => $this->siteFromArray($data),
+            $this->siteFromArray(...),
             $this->sitesFrom($this->readFile()),
         );
     }

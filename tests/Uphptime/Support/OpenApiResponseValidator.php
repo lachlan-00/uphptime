@@ -67,6 +67,7 @@ final class OpenApiResponseValidator
             foreach ($schema['allOf'] as $sub) {
                 $merged = array_merge($merged, is_array($sub) ? $this->resolve($sub) : []);
             }
+
             $sibling = $schema;
             unset($sibling['allOf']);
 
@@ -88,6 +89,7 @@ final class OpenApiResponseValidator
             if (!is_array($node) || !isset($node[$segment])) {
                 throw new RuntimeException(sprintf('$ref "%s" does not resolve.', $ref));
             }
+
             $node = $node[$segment];
         }
 
@@ -176,6 +178,7 @@ final class OpenApiResponseValidator
                 if (($schema['additionalProperties'] ?? true) === false) {
                     $errors[] = sprintf('%s: unexpected field "%s".', $at, $field);
                 }
+
                 continue;
             }
 

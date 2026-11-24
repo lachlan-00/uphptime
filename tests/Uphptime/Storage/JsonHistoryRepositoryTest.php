@@ -120,6 +120,7 @@ final class JsonHistoryRepositoryTest extends TestCase
         foreach ($processes as $process) {
             proc_close($process);
         }
+
         @unlink($script);
 
         $records = $repository->readDay('site-1', '2026-01-01');
@@ -194,9 +195,11 @@ final class JsonHistoryRepositoryTest extends TestCase
         foreach (glob($this->directory . '/*/*') ?: [] as $file) {
             unlink($file);
         }
+
         foreach (glob($this->directory . '/*') ?: [] as $dir) {
             @rmdir($dir);
         }
+
         @rmdir($this->directory);
     }
 

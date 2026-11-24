@@ -56,7 +56,7 @@ final class PeerResultAcquirer
 
         for ($attempt = 0; $attempt < $this->maxAttempts; $attempt++) {
             $peer = $this->peerSelector->pick($excluded);
-            if ($peer === null) {
+            if (!$peer instanceof \Uphptime\Peer\Peer) {
                 return null;
             }
 

@@ -39,7 +39,7 @@ trait PdoRepositoryTestHelpers
     protected function connectOrSkip(string $dialectName): PDO
     {
         $pdo = PdoTestConnection::attempt($dialectName);
-        if ($pdo === null) {
+        if (!$pdo instanceof \PDO) {
             self::markTestSkipped(sprintf(
                 '%s test container not reachable - run `docker compose -f docs/examples/test-databases/docker-compose.yml up -d` to enable this test.',
                 strtoupper($dialectName),
@@ -63,7 +63,7 @@ trait PdoRepositoryTestHelpers
         $path     = dirname(__DIR__, 4) . '/resources/sql/' . $dialect . '/schema.sql';
         $contents = (string) file_get_contents($path);
 
-        foreach (array_filter(array_map('trim', explode(";\n", $contents))) as $statement) {
+        foreach (array_filter(array_map(trim(...), explode(";\n", $contents))) as $statement) {
             $pdo->exec($statement);
         }
     }

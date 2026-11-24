@@ -59,7 +59,7 @@ final class PeersKeysRotateCommand implements CommandInterface
         }
 
         $peer = $this->peerRepository->find($peerId);
-        if ($peer === null) {
+        if (!$peer instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $peerId)], JSON_THROW_ON_ERROR));
 
             return 1;
@@ -75,7 +75,7 @@ final class PeersKeysRotateCommand implements CommandInterface
 
         $oldOutbound = $peer->outboundKey();
         $keys        = array_map(
-            static fn(PeerKey $key): PeerKey => $oldOutbound !== null && $key->keyId === $oldOutbound->keyId
+            static fn(PeerKey $key): PeerKey => $oldOutbound instanceof \Uphptime\Peer\PeerKey && $key->keyId === $oldOutbound->keyId
                 ? new PeerKey($key->keyId, $key->secret, false, true, $key->enabled, $key->createdAt)
                 : $key,
             $peer->keys,

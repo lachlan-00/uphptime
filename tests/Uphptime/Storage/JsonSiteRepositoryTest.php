@@ -99,6 +99,7 @@ final class JsonSiteRepositoryTest extends TestCase
         foreach ($processes as $process) {
             proc_close($process);
         }
+
         @unlink($script);
 
         $ids = array_map(static fn(Site $site): string => $site->id, $repository->all());

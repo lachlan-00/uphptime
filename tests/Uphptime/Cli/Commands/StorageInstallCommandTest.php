@@ -60,7 +60,7 @@ final class StorageInstallCommandTest extends TestCase
     private function assertInstallsAndRepeats(string $dialect): void
     {
         $pdo = PdoTestConnection::attempt($dialect);
-        if ($pdo === null) {
+        if (!$pdo instanceof \PDO) {
             self::markTestSkipped(sprintf(
                 '%s test container not reachable - run `docker compose -f docs/examples/test-databases/docker-compose.yml up -d` to enable this test.',
                 strtoupper($dialect),

@@ -53,7 +53,7 @@ final class SpawnedPhpServer
         }
 
         // Merges onto the full current environment; a child process losing SYSTEMROOT/PHPRC can silently load the wrong php.ini.
-        $fullEnv = array_merge((array) getenv(), $env);
+        $fullEnv = array_merge(getenv(), $env);
 
         $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $docRoot, $fullEnv);
         if ($process === false) {

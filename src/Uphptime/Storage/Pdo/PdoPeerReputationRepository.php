@@ -47,7 +47,7 @@ final class PdoPeerReputationRepository implements PeerReputationRepositoryInter
 
     public function all(): array
     {
-        return array_map(fn(array $row): PeerReputation => $this->fromRow($row), $this->query('SELECT * FROM peer_reputation ORDER BY peer_id ASC'));
+        return array_map($this->fromRow(...), $this->query('SELECT * FROM peer_reputation ORDER BY peer_id ASC'));
     }
 
     public function get(string $peerId): PeerReputation
@@ -75,8 +75,8 @@ final class PdoPeerReputationRepository implements PeerReputationRepositoryInter
             $reputation->peerId,
             $reputation->score,
             $reputation->consecutiveExclusions,
-            $reputation->excludedUntil !== null ? PdoTimestamp::format($reputation->excludedUntil) : null,
-            $reputation->lastEventAt !== null ? PdoTimestamp::format($reputation->lastEventAt) : null,
+            $reputation->excludedUntil instanceof \DateTimeImmutable ? PdoTimestamp::format($reputation->excludedUntil) : null,
+            $reputation->lastEventAt instanceof \DateTimeImmutable ? PdoTimestamp::format($reputation->lastEventAt) : null,
             $reputation->totalEvents,
         ]);
     }

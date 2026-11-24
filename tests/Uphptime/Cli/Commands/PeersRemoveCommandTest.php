@@ -59,7 +59,7 @@ final class PeersRemoveCommandTest extends TestCase
 
         $command = new PeersRemoveCommand($peers, $reputations, new FakeConsoleOutput());
         self::assertSame(0, $command->run(['--id=node-b', '--purge-reputation']));
-        self::assertEmpty($reputations->all(), '--purge-reputation deletes the peer\'s reputation');
+        self::assertEmpty($reputations->all(), "--purge-reputation deletes the peer's reputation");
     }
 
     public function testUnknownIdFailsWithNonZeroExit(): void

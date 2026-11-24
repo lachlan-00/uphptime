@@ -60,6 +60,7 @@ final class UptimeReportCalculatorTest extends TestCase
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
         $rollups->write(new DailyRollup('site-1', '2026-01-01', 5, 5, 0, 0, 0, 5, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
+
         $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Fail));
 
         $calculator = new UptimeReportCalculator($history, $rollups, new FakeClock('2026-01-02T12:00:00+00:00'));
@@ -84,6 +85,7 @@ final class UptimeReportCalculatorTest extends TestCase
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
         $rollups->write(new DailyRollup('site-1', '2026-01-01', 10, 9, 1, 0, 0, 10, 0, 90.0, null, null, new DateTimeImmutable('2026-01-02')));
+
         $history->append('site-1', $this->record('2026-01-02T00:00:00+00:00', CheckOutcome::Pass));
         $history->append('site-1', $this->record('2026-01-02T00:05:00+00:00', CheckOutcome::Fail));
 

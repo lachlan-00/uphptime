@@ -44,7 +44,7 @@ final class JsonCheckCacheRepository implements CheckCacheRepositoryInterface
         $entries = [];
         foreach ($this->fingerprints() as $fingerprint) {
             $entry = $this->find($fingerprint);
-            if ($entry !== null) {
+            if ($entry instanceof \Uphptime\Pinger\Cache\CheckCacheEntry) {
                 $entries[] = $entry;
             }
         }

@@ -35,7 +35,7 @@ final class CacheFingerprint
 {
     public static function forSite(Site $site): string
     {
-        return hash('sha256', (string) json_encode([
+        return hash('sha256', json_encode([
             'check_type' => $site->checkType->value,
             'url' => $site->url,
             'host' => $site->host,

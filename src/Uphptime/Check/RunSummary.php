@@ -38,5 +38,7 @@ final class RunSummary
         public readonly int $rollupsClosed,
         public readonly int $prunedFiles,
         public readonly int $durationMs,
+        public readonly int $disabledSites,
+        public readonly int $notDueSites,
     ) {}
 }

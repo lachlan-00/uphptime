@@ -97,7 +97,7 @@ final class PdoHistoryRepository implements HistoryRepositoryInterface
         [$start, $end] = $this->dayBounds($date);
 
         return array_map(
-            fn(array $row): HistoryRecord => $this->fromRow($row),
+            $this->fromRow(...),
             $this->query('SELECT * FROM history WHERE site_id = ? AND ts >= ? AND ts < ? ORDER BY ts ASC', [$siteId, $start, $end]),
         );
     }

@@ -46,7 +46,7 @@ final class SiteRuntimeState
     // Unknown on an inconclusive or stale check; keep the stored status for the next valid result.
     public function effectiveStatus(DateTimeImmutable $now, int $staleAfterSeconds): SiteState
     {
-        if ($this->lastCheckedAt === null || $this->lastOutcome === CheckOutcome::Error) {
+        if (!$this->lastCheckedAt instanceof \DateTimeImmutable || $this->lastOutcome === CheckOutcome::Error) {
             return SiteState::Unknown;
         }
 

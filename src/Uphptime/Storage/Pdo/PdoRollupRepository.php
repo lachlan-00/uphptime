@@ -92,8 +92,8 @@ final class PdoRollupRepository implements RollupRepositoryInterface
             $rollup->checksSelfSourced,
             $rollup->checksPeerSourced,
             $rollup->uptimePercent,
-            $rollup->firstCheckAt !== null ? PdoTimestamp::format($rollup->firstCheckAt) : null,
-            $rollup->lastCheckAt !== null ? PdoTimestamp::format($rollup->lastCheckAt) : null,
+            $rollup->firstCheckAt instanceof \DateTimeImmutable ? PdoTimestamp::format($rollup->firstCheckAt) : null,
+            $rollup->lastCheckAt instanceof \DateTimeImmutable ? PdoTimestamp::format($rollup->lastCheckAt) : null,
             PdoTimestamp::format($rollup->closedAt),
         ]);
     }

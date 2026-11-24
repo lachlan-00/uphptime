@@ -56,7 +56,7 @@ final class PeersKeysRetireCommand implements CommandInterface
         }
 
         $peer = $this->peerRepository->find($peerId);
-        if ($peer === null) {
+        if (!$peer instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $peerId)], JSON_THROW_ON_ERROR));
 
             return 1;

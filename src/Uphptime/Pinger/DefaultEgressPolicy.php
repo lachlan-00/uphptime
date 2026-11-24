@@ -100,7 +100,7 @@ final class DefaultEgressPolicy implements EgressPolicyInterface
     private function matchesPattern(string $pattern, string $host, string $resolvedIp): bool
     {
         $range = $this->tryRange($pattern);
-        if ($range !== null) {
+        if ($range instanceof \Uphptime\Pinger\IpRange) {
             return $range->contains($resolvedIp);
         }
 

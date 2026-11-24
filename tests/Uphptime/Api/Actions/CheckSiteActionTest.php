@@ -54,27 +54,27 @@ final class CheckSiteActionTest extends TestCase
     {
         self::$docRoot = sys_get_temp_dir() . '/uphptime-check-action-' . bin2hex(random_bytes(4));
         mkdir(self::$docRoot, 0775, true);
-        file_put_contents(self::$docRoot . '/index.php', <<<'PHP'
-            <?php
-            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            if ($path === '/redirect-malformed') {
-                header('Location: http://safe.test:' . $_SERVER['SERVER_PORT'] . '/login?value=unescaped space', true, 302);
-                exit;
-            }
-            if ($path === '/redirect-keyword') {
-                header('Location: /keyword', true, 302);
-                exit;
-            }
-            if ($path === '/redirect-loop') {
-                header('Location: /redirect-loop', true, 302);
-                exit;
-            }
-            if ($path === '/redirect-without-location') {
-                http_response_code(302);
-                exit;
-            }
-            echo $path === '/keyword' ? 'needle' : 'ok';
-            PHP);
+        file_put_contents(self::$docRoot . '/index.php', <<<'PHP_WRAP'
+        <?php
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        if ($path === '/redirect-malformed') {
+            header('Location: http://safe.test:' . $_SERVER['SERVER_PORT'] . '/login?value=unescaped space', true, 302);
+            exit;
+        }
+        if ($path === '/redirect-keyword') {
+            header('Location: /keyword', true, 302);
+            exit;
+        }
+        if ($path === '/redirect-loop') {
+            header('Location: /redirect-loop', true, 302);
+            exit;
+        }
+        if ($path === '/redirect-without-location') {
+            http_response_code(302);
+            exit;
+        }
+        echo $path === '/keyword' ? 'needle' : 'ok';
+        PHP_WRAP);
         self::$server = new SpawnedPhpServer(self::$docRoot);
     }
 
@@ -84,6 +84,7 @@ final class CheckSiteActionTest extends TestCase
         foreach (glob(self::$docRoot . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir(self::$docRoot);
     }
 
@@ -219,6 +220,7 @@ final class CheckSiteActionTest extends TestCase
         foreach (glob($directory . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir($directory);
     }
 

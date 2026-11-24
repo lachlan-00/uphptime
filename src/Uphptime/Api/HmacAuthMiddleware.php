@@ -69,7 +69,7 @@ final class HmacAuthMiddleware implements MiddlewareInterface
             return $this->rateLimitedResponse();
         }
 
-        if (!$auth->authenticated || $auth->peer === null || $auth->key === null) {
+        if (!$auth->authenticated || !$auth->peer instanceof \Uphptime\Peer\Peer || !$auth->key instanceof \Uphptime\Peer\PeerKey) {
             return $this->unauthorizedResponse();
         }
 
@@ -133,7 +133,7 @@ final class HmacAuthMiddleware implements MiddlewareInterface
     private function jsonResponse(int $status, array $body): ResponseInterface
     {
         $response = $this->responseFactory->createResponse($status);
-        $response->getBody()->write((string) json_encode($body, JSON_THROW_ON_ERROR));
+        $response->getBody()->write(json_encode($body, JSON_THROW_ON_ERROR));
 
         return $response->withHeader('Content-Type', 'application/json');
     }

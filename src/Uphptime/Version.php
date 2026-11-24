@@ -28,11 +28,12 @@ namespace Uphptime;
 final class Version
 {
     public const USER_AGENT = 'uPHPtime/' . self::VERSION . ' (+https://github.com/lachlan-00/uphptime)';
+
     public const VERSION    = '0.0.0';
 
     public static function userAgent(string $configured): string
     {
-        if ($configured === '' || $configured === 'uPHPtime/0.1' || $configured === 'uPHPtime/0.1 (+https://github.com/lachlan-00/uphptime)') {
+        if (in_array($configured, ['', 'uPHPtime/0.1', 'uPHPtime/0.1 (+https://github.com/lachlan-00/uphptime)'], true)) {
             return self::USER_AGENT;
         }
 

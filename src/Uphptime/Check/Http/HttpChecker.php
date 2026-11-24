@@ -50,8 +50,8 @@ final class HttpChecker implements CheckerInterface
 
         try {
             $response = $this->client->get($site->url, $timeoutSeconds, $this->userAgent, $site->challengeDelivery);
-        } catch (RuntimeException $exception) {
-            return CheckResult::fail($exception->getMessage());
+        } catch (RuntimeException $runtimeException) {
+            return CheckResult::fail($runtimeException->getMessage());
         }
 
         if ($response->statusCode < 200 || $response->statusCode >= 400) {

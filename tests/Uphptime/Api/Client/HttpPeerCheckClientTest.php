@@ -55,48 +55,48 @@ final class HttpPeerCheckClientTest extends TestCase
         self::$docRoot = sys_get_temp_dir() . '/uphptime-peer-client-' . bin2hex(random_bytes(4));
         mkdir(self::$docRoot, 0775, true);
 
-        file_put_contents(self::$docRoot . '/router.php', <<<'PHP'
-            <?php
-            $secret = 'shared-secret-bytes';
-            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            $requestId = $_SERVER['HTTP_X_UPHPTIME_REQUEST_ID'] ?? '';
-            $keyId = $_SERVER['HTTP_X_UPHPTIME_KEY_ID'] ?? '';
+        file_put_contents(self::$docRoot . '/router.php', <<<'PHP_WRAP'
+        <?php
+        $secret = 'shared-secret-bytes';
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $requestId = $_SERVER['HTTP_X_UPHPTIME_REQUEST_ID'] ?? '';
+        $keyId = $_SERVER['HTTP_X_UPHPTIME_KEY_ID'] ?? '';
 
-            if (str_contains($path, '/slow')) {
-                usleep(500000);
-            }
+        if (str_contains($path, '/slow')) {
+            usleep(500000);
+        }
 
-            $body = json_encode([
-                'outcome' => 'pass', 'http_status' => 200, 'response_time_ms' => 12,
-                'keyword_matched' => null, 'error' => null, 'evidence' => null, 'attestation' => 'none',
+        $body = json_encode([
+            'outcome' => 'pass', 'http_status' => 200, 'response_time_ms' => 12,
+            'keyword_matched' => null, 'error' => null, 'evidence' => null, 'attestation' => 'none',
+        ]);
+        $status = 200;
+        $responseTimestamp = (string) time();
+        $canonical = implode("\n", [$requestId, $responseTimestamp, (string) $status, hash('sha256', $body)]);
+        $signature = str_contains($path, '/tampered') ? str_repeat('0', 64) : hash_hmac('sha256', $canonical, $secret);
+
+        if (str_contains($path, '/record-headers')) {
+            $rawBody = file_get_contents('php://input');
+            $requestCanonical = implode("\n", [
+                'POST', '/peer/v1/check-site', $keyId,
+                $_SERVER['HTTP_X_UPHPTIME_TIMESTAMP'] ?? '',
+                $_SERVER['HTTP_X_UPHPTIME_NONCE'] ?? '',
+                $requestId, hash('sha256', $rawBody),
             ]);
-            $status = 200;
-            $responseTimestamp = (string) time();
-            $canonical = implode("\n", [$requestId, $responseTimestamp, (string) $status, hash('sha256', $body)]);
-            $signature = str_contains($path, '/tampered') ? str_repeat('0', 64) : hash_hmac('sha256', $canonical, $secret);
+            $expected = hash_hmac('sha256', $requestCanonical, $secret);
+            file_put_contents(__DIR__ . '/last-headers.json', json_encode([
+                'key_id' => $keyId,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+                'signature_valid' => hash_equals($expected, $_SERVER['HTTP_X_UPHPTIME_SIGNATURE'] ?? ''),
+            ]));
+        }
 
-            if (str_contains($path, '/record-headers')) {
-                $rawBody = file_get_contents('php://input');
-                $requestCanonical = implode("\n", [
-                    'POST', '/peer/v1/check-site', $keyId,
-                    $_SERVER['HTTP_X_UPHPTIME_TIMESTAMP'] ?? '',
-                    $_SERVER['HTTP_X_UPHPTIME_NONCE'] ?? '',
-                    $requestId, hash('sha256', $rawBody),
-                ]);
-                $expected = hash_hmac('sha256', $requestCanonical, $secret);
-                file_put_contents(__DIR__ . '/last-headers.json', json_encode([
-                    'key_id' => $keyId,
-                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-                    'signature_valid' => hash_equals($expected, $_SERVER['HTTP_X_UPHPTIME_SIGNATURE'] ?? ''),
-                ]));
-            }
-
-            http_response_code($status);
-            header('X-Uphptime-Request-Id: ' . $requestId);
-            header('X-Uphptime-Response-Timestamp: ' . $responseTimestamp);
-            header('X-Uphptime-Signature: ' . $signature);
-            echo $body;
-            PHP);
+        http_response_code($status);
+        header('X-Uphptime-Request-Id: ' . $requestId);
+        header('X-Uphptime-Response-Timestamp: ' . $responseTimestamp);
+        header('X-Uphptime-Signature: ' . $signature);
+        echo $body;
+        PHP_WRAP);
 
         self::$server = new SpawnedPhpServer(self::$docRoot, self::$docRoot . '/router.php');
     }
@@ -107,6 +107,7 @@ final class HttpPeerCheckClientTest extends TestCase
         foreach (glob(self::$docRoot . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir(self::$docRoot);
     }
 

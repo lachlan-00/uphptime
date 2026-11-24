@@ -88,7 +88,7 @@ final class ReportCommand implements CommandInterface
     {
         $period = $options['period'] ?? null;
         $result = $this->reportSetBuilder->build($period, $options['date'] ?? null, $options['month'] ?? null, $group);
-        if ($result === null) {
+        if (!$result instanceof \Uphptime\Reporting\SiteReportSet) {
             $this->output->writeErrorLine(json_encode(
                 ['error' => sprintf('Unknown period "%s".', SiteReportSetBuilder::resolvePeriod($period, $options['date'] ?? null, $options['month'] ?? null))],
                 JSON_THROW_ON_ERROR,
@@ -115,7 +115,7 @@ final class ReportCommand implements CommandInterface
         $period     = SiteReportSetBuilder::resolvePeriod($options['period'] ?? null, $options['date'] ?? null, $options['month'] ?? null);
 
         $site = $identifier !== null ? $this->siteRepository->find($identifier) : null;
-        if ($site === null && $identifier !== null) {
+        if (!$site instanceof \Uphptime\Site\Site && $identifier !== null) {
             $matches = $this->matchesByName($identifier);
             if (count($matches) === 1) {
                 $site = $matches[0];
@@ -143,7 +143,7 @@ final class ReportCommand implements CommandInterface
             default => null,
         };
 
-        if ($report === null) {
+        if (!$report instanceof \Uphptime\Reporting\UptimeReport) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('Unknown period "%s".', $period)], JSON_THROW_ON_ERROR));
 
             return 1;

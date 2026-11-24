@@ -47,6 +47,7 @@ final class RetentionPrunerTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site());
+
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
 
@@ -59,6 +60,7 @@ final class RetentionPrunerTest extends TestCase
 
         // Within the retention window: must be kept regardless of rollup state.
         $history->append('site-1', $this->record('2026-01-01T00:00:00+00:00'));
+
         $rollups->write($this->rollup('2026-01-01'));
 
         $clock  = new FakeClock('2026-01-02T00:00:00+00:00');
@@ -72,6 +74,7 @@ final class RetentionPrunerTest extends TestCase
     {
         $sites = new InMemorySiteRepository();
         $sites->save($this->site());
+
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
 

@@ -69,7 +69,7 @@ final class SafeIcmpClient implements IcmpClientInterface
         }
 
         if (!$this->egressPolicy->isTargetAllowed($host, $ip)) {
-            throw new EgressPolicyException(sprintf('Target is not in the calling peer\'s allowlist: %s', $host));
+            throw new EgressPolicyException(sprintf("Target is not in the calling peer's allowlist: %s", $host));
         }
 
         $probeStartedAt = new DateTimeImmutable();

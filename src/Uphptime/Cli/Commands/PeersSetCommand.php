@@ -55,7 +55,7 @@ final class PeersSetCommand implements CommandInterface
         }
 
         $peer = $this->peerRepository->find($id);
-        if ($peer === null) {
+        if (!$peer instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $id)], JSON_THROW_ON_ERROR));
 
             return 1;
@@ -64,8 +64,8 @@ final class PeersSetCommand implements CommandInterface
         try {
             $this->assertNoConflicts($options);
             $updated = $this->applyOptions($peer, $options);
-        } catch (InvalidArgumentException $exception) {
-            $this->output->writeErrorLine(json_encode(['error' => $exception->getMessage()], JSON_THROW_ON_ERROR));
+        } catch (InvalidArgumentException $invalidArgumentException) {
+            $this->output->writeErrorLine(json_encode(['error' => $invalidArgumentException->getMessage()], JSON_THROW_ON_ERROR));
 
             return 1;
         }

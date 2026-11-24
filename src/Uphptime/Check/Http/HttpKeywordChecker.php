@@ -44,7 +44,7 @@ final class HttpKeywordChecker implements CheckerInterface
 
     public function check(Site $site, float $timeoutSeconds): CheckResult
     {
-        if ($site->url === null || $site->keyword === null || $site->keywordMode === null) {
+        if ($site->url === null || $site->keyword === null || !$site->keywordMode instanceof \Uphptime\Site\KeywordMode) {
             throw new CheckConfigurationException(
                 sprintf('Site "%s" is missing url/keyword/keyword_mode for an HTTP+keyword check.', $site->id),
             );
@@ -52,8 +52,8 @@ final class HttpKeywordChecker implements CheckerInterface
 
         try {
             $response = $this->client->get($site->url, $timeoutSeconds, $this->userAgent, $site->challengeDelivery);
-        } catch (RuntimeException $exception) {
-            return CheckResult::fail($exception->getMessage());
+        } catch (RuntimeException $runtimeException) {
+            return CheckResult::fail($runtimeException->getMessage());
         }
 
         if ($response->statusCode < 200 || $response->statusCode >= 300) {

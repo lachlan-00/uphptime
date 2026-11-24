@@ -46,7 +46,7 @@ final class PdoPeerRepository implements PeerRepositoryInterface
 
     public function all(): array
     {
-        return array_map(fn(array $row): Peer => $this->hydrate($row), $this->query('SELECT * FROM peers ORDER BY id ASC'));
+        return array_map($this->hydrate(...), $this->query('SELECT * FROM peers ORDER BY id ASC'));
     }
 
     public function enabledForDelegation(): array
@@ -75,7 +75,7 @@ final class PdoPeerRepository implements PeerRepositoryInterface
         foreach ($rows as $row) {
             $peer = $this->hydrate($row);
             $key  = $peer->findInboundKey($keyId);
-            if ($key !== null) {
+            if ($key instanceof \Uphptime\Peer\PeerKey) {
                 return ['peer' => $peer, 'key' => $key];
             }
         }
@@ -97,12 +97,12 @@ final class PdoPeerRepository implements PeerRepositoryInterface
             $this->replaceKeys($peer);
             $this->replaceAllowlist($peer);
             $this->pdo->commit();
-        } catch (PDOException $exception) {
+        } catch (PDOException $pdoException) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
 
-            PdoExceptionTranslator::translate($exception);
+            PdoExceptionTranslator::translate($pdoException);
         }
     }
 
@@ -112,7 +112,7 @@ final class PdoPeerRepository implements PeerRepositoryInterface
         $peerId = (string) $row['id'];
 
         $keys      = array_map(
-            fn(array $keyRow): PeerKey => $this->keyFromRow($keyRow),
+            $this->keyFromRow(...),
             $this->query('SELECT * FROM peer_keys WHERE peer_id = ? ORDER BY id ASC', [$peerId]),
         );
         $allowlist = array_map(

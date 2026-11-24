@@ -44,16 +44,14 @@ return [
     CacheRefresher::class => factory(
         static fn(ContainerInterface $c): CacheRefresher => new CacheRefresher($c->get(AtomicWriter::class), $c->get('data.dir') . '/pinger_cache'),
     ),
-    CacheRefreshRunner::class => factory(static function (ContainerInterface $c): CacheRefreshRunner {
-        return new CacheRefreshRunner(
-            $c->get(CheckCacheRepositoryInterface::class),
-            $c->get(CacheRefresher::class),
-            // Always the plain executor, never the caching decorator - the cron is itself a refresh.
-            $c->get(DelegatedCheckExecutor::class),
-            $c->get(ClockInterface::class),
-            $c->get(Config::class),
-        );
-    }),
+    CacheRefreshRunner::class => factory(static fn(ContainerInterface $c): CacheRefreshRunner => new CacheRefreshRunner(
+        $c->get(CheckCacheRepositoryInterface::class),
+        $c->get(CacheRefresher::class),
+        // Always the plain executor, never the caching decorator - the cron is itself a refresh.
+        $c->get(DelegatedCheckExecutor::class),
+        $c->get(ClockInterface::class),
+        $c->get(Config::class),
+    )),
     CheckCacheRepositoryInterface::class => factory(
         static fn(ContainerInterface $c): CheckCacheRepositoryInterface => new JsonCheckCacheRepository($c->get(AtomicWriter::class), $c->get('data.dir') . '/pinger_cache'),
     ),

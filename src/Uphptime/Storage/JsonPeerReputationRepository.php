@@ -44,7 +44,7 @@ final class JsonPeerReputationRepository implements PeerReputationRepositoryInte
     public function all(): array
     {
         return array_map(
-            fn(array $data): PeerReputation => $this->fromArray($data),
+            $this->fromArray(...),
             $this->rowsFrom($this->decodeFile($this->writer->read($this->path))),
         );
     }

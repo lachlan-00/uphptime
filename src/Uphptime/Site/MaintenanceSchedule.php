@@ -64,11 +64,11 @@ final class MaintenanceSchedule
         $start = $this->startsAt->setTimezone($zone);
 
         $occurrenceStart = $this->occurrenceStartAtOrBefore($start, $local);
-        if ($occurrenceStart === null || $occurrenceStart < $start) {
+        if (!$occurrenceStart instanceof \DateTimeImmutable || $occurrenceStart < $start) {
             return false;
         }
 
-        if ($this->endsOn !== null && $occurrenceStart > $this->endsOn) {
+        if ($this->endsOn instanceof \DateTimeImmutable && $occurrenceStart > $this->endsOn) {
             return false;
         }
 

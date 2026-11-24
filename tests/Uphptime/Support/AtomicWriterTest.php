@@ -105,6 +105,7 @@ final class AtomicWriterTest extends TestCase
         foreach (glob($this->directory . '/*') ?: [] as $file) {
             unlink($file);
         }
+
         rmdir($this->directory);
     }
 }

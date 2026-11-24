@@ -44,7 +44,7 @@ final class JsonChallengeTokenStore implements ChallengeTokenStoreInterface
     {
         $token = $this->decode($siteId, $this->writer->read($this->pathFor($siteId)));
 
-        return $token !== null && $token->isValidAt($now) ? $token : null;
+        return $token instanceof \Uphptime\Api\ChallengeToken\ChallengeToken && $token->isValidAt($now) ? $token : null;
     }
 
     public function issue(string $siteId, DateTimeImmutable $now, int $ttlSeconds): ChallengeToken

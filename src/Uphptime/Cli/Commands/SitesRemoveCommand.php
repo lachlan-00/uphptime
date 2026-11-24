@@ -55,7 +55,7 @@ final class SitesRemoveCommand implements CommandInterface
             return 1;
         }
 
-        if ($this->siteRepository->find($id) === null) {
+        if (!$this->siteRepository->find($id) instanceof \Uphptime\Site\Site) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No site with id "%s".', $id)], JSON_THROW_ON_ERROR));
 
             return 1;

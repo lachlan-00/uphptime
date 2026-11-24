@@ -73,8 +73,8 @@ final class CliApplication
 
         try {
             return $this->commands[$action]->run($args);
-        } catch (Throwable $exception) {
-            $this->output->writeErrorLine(json_encode(['error' => $exception->getMessage()], JSON_THROW_ON_ERROR));
+        } catch (Throwable $throwable) {
+            $this->output->writeErrorLine(json_encode(['error' => $throwable->getMessage()], JSON_THROW_ON_ERROR));
 
             return 1;
         }
@@ -96,6 +96,7 @@ final class CliApplication
             foreach ($actions as $action) {
                 $lines[] = sprintf('  %-24s %s', $action, $descriptions[$action] ?? '');
             }
+
             $lines[] = '';
         }
 

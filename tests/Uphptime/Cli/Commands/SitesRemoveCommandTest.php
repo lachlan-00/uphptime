@@ -62,7 +62,7 @@ final class SitesRemoveCommandTest extends TestCase
 
         $command = new SitesRemoveCommand($sites, $history, new InMemoryRollupRepository(), new FakeConsoleOutput());
         self::assertSame(0, $command->run(['--id=' . $id, '--purge-history']));
-        self::assertEmpty($history->datesWithHistory($id), '--purge-history deletes the site\'s history');
+        self::assertEmpty($history->datesWithHistory($id), "--purge-history deletes the site's history");
     }
 
     public function testUnknownIdFailsWithNonZeroExit(): void

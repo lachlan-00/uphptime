@@ -55,12 +55,12 @@ final class HttpPeerCheckClient implements PeerCheckClientInterface
     public function requestCheck(Peer $peer, Site $site, float $timeoutSeconds): DelegatedCheckResult
     {
         $key = $peer->outboundKey();
-        if ($key === null || $peer->baseUrl === null) {
+        if (!$key instanceof \Uphptime\Peer\PeerKey || $peer->baseUrl === null) {
             throw new DelegatedCheckFailedException(sprintf('Peer "%s" has no active outbound key or base URL.', $peer->id));
         }
 
         $url       = rtrim($peer->baseUrl, '/') . self::PATH;
-        $body      = (string) json_encode($this->payloadFor($site, $timeoutSeconds), JSON_THROW_ON_ERROR);
+        $body      = json_encode($this->payloadFor($site, $timeoutSeconds), JSON_THROW_ON_ERROR);
         $timestamp = (string) $this->clock->now()->getTimestamp();
         $nonce     = bin2hex(random_bytes(16));
         $requestId = Uuid::v4();
@@ -105,7 +105,7 @@ final class HttpPeerCheckClient implements PeerCheckClientInterface
             throw new DelegatedCheckFailedException($error !== '' ? $error : 'Unknown cURL error.');
         }
 
-        $statusCode = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 
         if ($statusCode !== 200) {
             throw new DelegatedCheckFailedException(sprintf('Peer answered with HTTP %d.', $statusCode));

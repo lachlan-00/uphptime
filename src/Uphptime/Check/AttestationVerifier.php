@@ -55,7 +55,7 @@ final class AttestationVerifier
         $expected = $this->tokenStore->current($site->id, $this->clock->now());
         $observed = $evidence['challenge_token_observed'] ?? null;
 
-        if ($expected !== null && is_string($observed) && hash_equals($expected->token, $observed)) {
+        if ($expected instanceof \Uphptime\Api\ChallengeToken\ChallengeToken && is_string($observed) && hash_equals($expected->token, $observed)) {
             return AttestationVerdict::valid('token');
         }
 

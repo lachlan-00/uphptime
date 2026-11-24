@@ -52,7 +52,7 @@ final class PeersAddCommand implements CommandInterface
 
         try {
             $this->require($options, ['id', 'label']);
-            if ($this->peerRepository->find($options['id']) !== null) {
+            if ($this->peerRepository->find($options['id']) instanceof \Uphptime\Peer\Peer) {
                 throw new InvalidArgumentException(sprintf('A peer with id "%s" already exists.', $options['id']));
             }
 

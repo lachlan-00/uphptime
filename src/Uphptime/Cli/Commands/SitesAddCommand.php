@@ -107,7 +107,7 @@ final class SitesAddCommand implements CommandInterface
             return [];
         }
 
-        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn(string $group): bool => $group !== ''));
+        return array_values(array_filter(array_map(trim(...), explode(',', $raw)), static fn(string $group): bool => $group !== ''));
     }
 
     /**

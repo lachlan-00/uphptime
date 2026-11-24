@@ -49,7 +49,7 @@ final class PeerReputation
 
     public function isExcluded(DateTimeImmutable $now): bool
     {
-        return $this->excludedUntil !== null && $this->excludedUntil > $now;
+        return $this->excludedUntil instanceof \DateTimeImmutable && $this->excludedUntil > $now;
     }
 
     // Starts fresh from the probation score after a cooldown, keeping the streak so relapses lengthen the next one.

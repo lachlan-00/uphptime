@@ -69,8 +69,8 @@ final class CacheRefresher
             function (?string $current) use ($site, $fingerprint, $now, $ttlSeconds, $isFreshCallback, $probeCallback, $requestedAt, &$resolved, &$probedJustNow): ?string {
                 $existing = $current !== null ? $this->decode($current) : null;
 
-                if ($existing !== null && $isFreshCallback($existing, $now)) {
-                    if ($requestedAt === null) {
+                if ($existing instanceof \Uphptime\Pinger\Cache\CheckCacheEntry && $isFreshCallback($existing, $now)) {
+                    if (!$requestedAt instanceof \DateTimeImmutable) {
                         $resolved = $existing;
 
                         return null;
@@ -104,7 +104,7 @@ final class CacheRefresher
                     attestation: 'none',
                     probedAt: $now,
                     expiresAt: $now->modify(sprintf('+%d seconds', $ttlSeconds)),
-                    lastRequestedAt: $requestedAt ?? ($existing !== null ? $existing->lastRequestedAt : $now),
+                    lastRequestedAt: $requestedAt ?? ($existing->lastRequestedAt ?? $now),
                 );
 
                 return json_encode($resolved->toArray(), JSON_THROW_ON_ERROR) . "\n";

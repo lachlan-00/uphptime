@@ -160,6 +160,7 @@ final class SafeHttpClient implements HttpClientInterface
             if (preg_match('/^Date:\s*(.+?)\r?\n$/i', $line, $matches) === 1) {
                 $dateHeader = trim($matches[1]);
             }
+
             if (preg_match('/^Location:\s*(.+?)\r?\n$/i', $line, $matches) === 1) {
                 $location = trim($matches[1]);
             }
@@ -194,7 +195,7 @@ final class SafeHttpClient implements HttpClientInterface
         }
 
         $elapsedMs = (int) round((microtime(true) - $start) * 1000);
-        $status    = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $status    = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
         $isHttps   = str_starts_with(strtolower($url), 'https://');
 
         $tlsFingerprint = null;
@@ -299,7 +300,7 @@ final class SafeHttpClient implements HttpClientInterface
         }
 
         if (!$this->egressPolicy->isTargetAllowed($host, $ip)) {
-            throw new EgressPolicyException(sprintf('Target is not in the calling peer\'s allowlist: %s', $host));
+            throw new EgressPolicyException(sprintf("Target is not in the calling peer's allowlist: %s", $host));
         }
 
         return ['host' => $host, 'port' => $port, 'ip' => $ip];
@@ -325,11 +326,11 @@ final class SafeHttpClient implements HttpClientInterface
     /** @return array{dns: ?int, connect: ?int, tls: ?int, first_byte: ?int, total: ?int} */
     private function timingEvidence(CurlHandle $handle, bool $isHttps): array
     {
-        $nameLookup    = (float) curl_getinfo($handle, CURLINFO_NAMELOOKUP_TIME);
-        $connect       = (float) curl_getinfo($handle, CURLINFO_CONNECT_TIME);
-        $appConnect    = (float) curl_getinfo($handle, CURLINFO_APPCONNECT_TIME);
-        $startTransfer = (float) curl_getinfo($handle, CURLINFO_STARTTRANSFER_TIME);
-        $total         = (float) curl_getinfo($handle, CURLINFO_TOTAL_TIME);
+        $nameLookup    = curl_getinfo($handle, CURLINFO_NAMELOOKUP_TIME);
+        $connect       = curl_getinfo($handle, CURLINFO_CONNECT_TIME);
+        $appConnect    = curl_getinfo($handle, CURLINFO_APPCONNECT_TIME);
+        $startTransfer = curl_getinfo($handle, CURLINFO_STARTTRANSFER_TIME);
+        $total         = curl_getinfo($handle, CURLINFO_TOTAL_TIME);
 
         $firstByteBase = $isHttps ? $appConnect : $connect;
 

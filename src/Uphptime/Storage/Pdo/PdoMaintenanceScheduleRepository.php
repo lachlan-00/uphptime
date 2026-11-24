@@ -51,7 +51,7 @@ final class PdoMaintenanceScheduleRepository implements MaintenanceScheduleRepos
     public function all(): array
     {
         return array_map(
-            fn(array $row): MaintenanceSchedule => $this->fromRow($row),
+            $this->fromRow(...),
             $this->query('SELECT * FROM maintenance_schedules ORDER BY id ASC'),
         );
     }
@@ -87,7 +87,7 @@ final class PdoMaintenanceScheduleRepository implements MaintenanceScheduleRepos
             $schedule->repeatEvery,
             $schedule->repeatUnit->value,
             $schedule->repeatDayOfWeek,
-            $schedule->endsOn !== null ? PdoTimestamp::format($schedule->endsOn) : null,
+            $schedule->endsOn instanceof \DateTimeImmutable ? PdoTimestamp::format($schedule->endsOn) : null,
             $schedule->note,
         ]);
     }

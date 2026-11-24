@@ -52,8 +52,11 @@ use Uphptime\Tests\Support\SpawnedPhpServer;
 final class OpenApiContractTest extends TestCase
 {
     private const KEY_ID         = 'contract-test-key';
+
     private const REPORT_API_KEY = 'contract-report-key';
+
     private const SECRET         = 'contract-test-secret';
+
     private const SITE_ID        = 'demo-site';
 
     private static SpawnedPhpServer $monitoredSite;
@@ -89,6 +92,7 @@ final class OpenApiContractTest extends TestCase
         foreach (glob(self::$monitoredSiteDocRoot . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir(self::$monitoredSiteDocRoot);
     }
 
@@ -279,6 +283,7 @@ final class OpenApiContractTest extends TestCase
         if ($body !== null) {
             curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
         }
+
         curl_setopt($handle, CURLOPT_HEADERFUNCTION, function ($ch, string $line) use (&$responseHeaders): int {
             if (preg_match('/^([^:]+):\s*(.*?)\r?\n$/', $line, $matches) === 1) {
                 $responseHeaders[strtolower($matches[1])] = trim($matches[2]);
@@ -288,7 +293,7 @@ final class OpenApiContractTest extends TestCase
         });
 
         $rawBody = curl_exec($handle);
-        $status  = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $status  = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 
         if (!is_string($rawBody)) {
             throw new RuntimeException(curl_error($handle) ?: 'Unknown cURL error.');

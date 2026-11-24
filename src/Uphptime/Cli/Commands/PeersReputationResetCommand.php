@@ -57,7 +57,7 @@ final class PeersReputationResetCommand implements CommandInterface
             return 1;
         }
 
-        if ($this->peerRepository->find($id) === null) {
+        if (!$this->peerRepository->find($id) instanceof \Uphptime\Peer\Peer) {
             $this->output->writeErrorLine(json_encode(['error' => sprintf('No peer with id "%s".', $id)], JSON_THROW_ON_ERROR));
 
             return 1;

@@ -38,14 +38,8 @@ final class FakeDelegatedCheckExecutor implements DelegatedCheckExecutorInterfac
 {
     public int $callCount = 0;
 
-    /** @var DelegatedCheckOutcome[] */
-    private array $queue;
-
-    /** @param DelegatedCheckOutcome[] $outcomes replayed in order; the last one repeats once exhausted */
-    public function __construct(array $outcomes)
-    {
-        $this->queue = $outcomes;
-    }
+    /** @param DelegatedCheckOutcome[] $queue replayed in order; the last one repeats once exhausted */
+    public function __construct(private array $queue) {}
 
     public function execute(Site $site, ?Peer $callingPeer, float $timeoutSeconds): DelegatedCheckOutcome
     {

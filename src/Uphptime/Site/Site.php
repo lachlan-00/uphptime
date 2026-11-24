@@ -85,7 +85,7 @@ final class Site
     // Attestation Layer 1 only applies to HTTP(S) checks - TCP/ICMP have no response to carry a token in.
     public function usesChallengeToken(): bool
     {
-        return $this->challengeDelivery !== null && in_array($this->checkType, [CheckType::Http, CheckType::HttpKeyword], true);
+        return $this->challengeDelivery instanceof \Uphptime\Site\ChallengeDelivery && in_array($this->checkType, [CheckType::Http, CheckType::HttpKeyword], true);
     }
 
     // Returns a copy of this site with its challenge delivery mode replaced.

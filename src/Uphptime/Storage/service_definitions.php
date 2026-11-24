@@ -60,9 +60,7 @@ return [
     PDO::class => factory(
         static fn(ContainerInterface $c): PDO => $c->get(PdoConnectionFactory::class)->create($c->get(Config::class)),
     ),
-    SqlDialect::class => factory(static function (ContainerInterface $c): SqlDialect {
-        return $c->get(Config::class)->storageBackend === 'pgsql' ? new PostgreSqlDialect() : new MySqlDialect();
-    }),
+    SqlDialect::class => factory(static fn(ContainerInterface $c): SqlDialect => $c->get(Config::class)->storageBackend === 'pgsql' ? new PostgreSqlDialect() : new MySqlDialect()),
     HistoryRepositoryInterface::class => factory(static function (ContainerInterface $c): HistoryRepositoryInterface {
         $config = $c->get(Config::class);
         if ($config->storageBackend === 'json') {

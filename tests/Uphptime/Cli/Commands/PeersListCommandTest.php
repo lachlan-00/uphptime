@@ -58,6 +58,7 @@ final class PeersListCommandTest extends TestCase
         (new PeersAddCommand($peers, new PeerKeyOptionResolver(new FakeClock()), new FakeConsoleOutput()))->run(['--id=node-b', '--label=Node B']);
         $reputations = new InMemoryPeerReputationRepository();
         $reputations->save(new PeerReputation('node-b', 20.0, 2, new DateTimeImmutable('2026-01-01T01:00:00+00:00'), null, 7));
+
         $output = new FakeConsoleOutput();
 
         (new PeersListCommand($peers, $reputations, new FakeClock('2026-01-01T00:00:00+00:00'), $output))->run([]);

@@ -83,13 +83,9 @@ final class CheckRunner
     // Read-only; lets a lock-blocked invocation report due-but-unchecked sites instead of a bare error.
     public function overlapSnapshot(): RunSummary
     {
-        $sites = $this->siteRepository->all();
-        $due   = count(array_filter(
-            $sites,
-            fn(Site $site): bool => $site->enabled && $site->state->nextDueAt <= $this->clock->now(),
-        ));
+        $sites = $this->classifySites($this->clock->now());
 
-        return new RunSummary(count($sites), 0, 0, $due, 0, 0, 0);
+        return new RunSummary($sites['total'], 0, 0, count($sites['due']), 0, 0, 0, $sites['disabled'], $sites['notDue']);
     }
 
     public function run(?int $budgetSecondsOverride = null): RunSummary
@@ -101,11 +97,12 @@ final class CheckRunner
 
         $rollupsClosed = $this->rollupBuilder->closeFinishedDays();
         $prunedFiles   = $this->retentionPruner->prune($this->config->retentionDays);
+        $sites         = $this->classifySites($now);
 
         $checked = 0;
         $skipped = 0;
 
-        foreach ($this->dueSitesInOrder($now) as $site) {
+        foreach ($sites['due'] as $site) {
             if ($budget->isExhausted()) {
                 $skipped++;
                 continue;
@@ -115,7 +112,7 @@ final class CheckRunner
             $checked++;
         }
 
-        return new RunSummary(count($this->siteRepository->all()), $checked, $skipped, 0, $rollupsClosed, $prunedFiles, $this->nowMs() - $startedAtMs);
+        return new RunSummary($sites['total'], $checked, $skipped, 0, $rollupsClosed, $prunedFiles, $this->nowMs() - $startedAtMs, $sites['disabled'], $sites['notDue']);
     }
 
     /** @param array<string, mixed>|null $evidence */
@@ -132,8 +129,8 @@ final class CheckRunner
 
         try {
             $result = $checker->check($site, (float) $this->config->requestTimeoutSeconds);
-        } catch (CheckConfigurationException $exception) {
-            $result = CheckResult::error($exception->getMessage());
+        } catch (CheckConfigurationException $checkConfigurationException) {
+            $result = CheckResult::error($checkConfigurationException->getMessage());
         }
 
         // With local_failure_counts_as_down disabled, an uncorroborated connection failure is an error, not downtime.
@@ -166,7 +163,7 @@ final class CheckRunner
     {
         $acquired = $this->peerResultAcquirer?->acquire($site, [], (float) $this->config->peerRequestTimeoutSeconds);
 
-        if ($acquired === null || $acquired->result->outcome === CheckOutcome::Error) {
+        if (!$acquired instanceof \Uphptime\Check\AcquiredPeerResult || $acquired->result->outcome === CheckOutcome::Error) {
             // No peer produced a conclusive result, so fall back rather than record an unmeasured cycle.
             $this->checkLocally($site, $checkedAt, $schedulingNow);
 
@@ -182,24 +179,34 @@ final class CheckRunner
         $this->resolvePass($site, $acquired, $checkedAt, $schedulingNow);
     }
 
-    // Enabled sites whose next_due_at has passed, soonest-due first.
-    /** @return Site[] */
-    private function dueSitesInOrder(DateTimeImmutable $now): array
+    // Splits every configured site into disabled, due (soonest-due first) and not-yet-due, so total = due + disabled + notDue always.
+    /** @return array{total: int, due: Site[], disabled: int, notDue: int} */
+    private function classifySites(DateTimeImmutable $now): array
     {
-        $due = array_values(array_filter(
-            $this->siteRepository->all(),
-            static fn(Site $site): bool => $site->enabled && $site->state->nextDueAt <= $now,
-        ));
+        $sites    = $this->siteRepository->all();
+        $due      = [];
+        $disabled = 0;
+        $notDue   = 0;
+
+        foreach ($sites as $site) {
+            if (!$site->enabled) {
+                $disabled++;
+            } elseif ($site->state->nextDueAt <= $now) {
+                $due[] = $site;
+            } else {
+                $notDue++;
+            }
+        }
 
         usort($due, static fn(Site $a, Site $b): int => $a->state->nextDueAt <=> $b->state->nextDueAt);
 
-        return $due;
+        return ['total' => count($sites), 'due' => $due, 'disabled' => $disabled, 'notDue' => $notDue];
     }
 
     // Whether at least one peer is available to delegate to, excluding any circuit-broken by reputation.
     private function hasUsablePeer(): bool
     {
-        return $this->peerSelector !== null && $this->peerResultAcquirer !== null && $this->peerSelector->pick([]) !== null;
+        return $this->peerSelector instanceof \Uphptime\Peer\PeerSelectorInterface && $this->peerResultAcquirer instanceof \Uphptime\Check\PeerResultAcquirer && $this->peerSelector->pick([]) instanceof \Uphptime\Peer\Peer;
     }
 
     // Steps from the previous slot in whole intervals past $schedulingNow, not $checkedAt, so a slow run can't bake its lag into the schedule.
@@ -278,7 +285,7 @@ final class CheckRunner
     {
         $primarySource = $primary->source();
 
-        if ($this->downConfirmer === null) {
+        if (!$this->downConfirmer instanceof \Uphptime\Check\DownConfirmer) {
             $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $schedulingNow, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
 
             return;
@@ -290,7 +297,7 @@ final class CheckRunner
         $source      = $confirmation->source;
         $attestation = $confirmation->attestation;
 
-        if (!$confirmation->confirmed || $result === null || $source === null || $attestation === null || $result->outcome === CheckOutcome::Error) {
+        if (!$confirmation->confirmed || !$result instanceof \Uphptime\Check\CheckResult || $source === null || $attestation === null || $result->outcome === CheckOutcome::Error) {
             $this->applyResult($site, CheckResult::error('peer_failure_unconfirmed: ' . ($primary->result->error ?? 'unknown error')), $checkedAt, $schedulingNow, $primarySource, $primary->evidence, $primary->attestation, peer: $primary->peer);
 
             return;

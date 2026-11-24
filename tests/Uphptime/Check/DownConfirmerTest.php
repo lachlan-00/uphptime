@@ -99,7 +99,8 @@ final class DownConfirmerTest extends TestCase
         $reputations = new InMemoryPeerReputationRepository();
         $clock       = new FakeClock('2026-01-01T00:00:00+00:00');
         $tokenStore  = new InMemoryChallengeTokenStore('fixed-token');
-        $tokenStore->issue('a', $clock->now(), 300); // normally CheckRunner's job, before delegating
+        $tokenStore->issue('a', $clock->now(), 300);
+        // normally CheckRunner's job, before delegating
         $verifier = new AttestationVerifier($tokenStore, $clock);
         $config   = $this->config();
 

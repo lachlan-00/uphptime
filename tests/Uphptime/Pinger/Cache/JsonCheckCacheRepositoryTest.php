@@ -101,6 +101,7 @@ final class JsonCheckCacheRepositoryTest extends TestCase
         foreach (glob($this->directory . '/*') ?: [] as $file) {
             @unlink($file);
         }
+
         @rmdir($this->directory);
     }
 

@@ -82,7 +82,7 @@ final class PeersListCommand implements CommandInterface
             'allow_outbound_delegation' => $peer->allowOutboundDelegation,
             'rate_limit_per_minute' => $peer->rateLimitPerMinute,
             'target_allowlist' => $peer->targetAllowlist,
-            'keys' => array_map(fn(PeerKey $key): array => $this->keyToArray($key), $peer->keys),
+            'keys' => array_map($this->keyToArray(...), $peer->keys),
             'reputation' => $this->reputationToArray($this->reputationRepository->get($peer->id), $now),
         ];
     }
