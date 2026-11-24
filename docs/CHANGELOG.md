@@ -15,3 +15,4 @@
 * `storage:migrate-timezone --force` deduplicates history records and never writes more records than it read.
 * Report API, `bin/uphptime report` and the dashboard support `period=range` (`start`/`end`, whole calendar days inclusive) for custom multi-day reports such as a week.
 * `check_due_grace_seconds` (default 30) treats a site as due slightly ahead of its `next_due_at`, so ordinary cron/process-startup jitter never strands it a whole extra interval unchecked.
+* `config:check` CLI command reports any `config/node.json` key missing its value, and `--fix` fills in just those keys with their defaults without touching anything already set.

@@ -47,4 +47,14 @@ return [
 
         return (new ConfigLoader())->load($configPath);
     }),
+    // The resolved config file path itself, for anything that needs to read/write the raw file
+    // rather than the already-defaulted Config object (e.g. config:check).
+    'config.path' => factory(static function (): string {
+        $configPath = getenv('UPHPTIME_CONFIG_PATH');
+        if (!is_string($configPath) || $configPath === '') {
+            $configPath = dirname(__DIR__, 3) . '/config/node.json';
+        }
+
+        return $configPath;
+    }),
 ];

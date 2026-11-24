@@ -35,6 +35,7 @@ final class CommandDescriptions
     public static function all(): array
     {
         return [
+            'config:check' => 'Report any config/node.json key missing its value (pass --fix to add them with their defaults)',
             'sites:add' => 'Add a new site to monitor',
             'sites:list' => 'List sites and their current status',
             'sites:remove' => "Remove a site (pass --purge-history to also delete its history/rollups)",

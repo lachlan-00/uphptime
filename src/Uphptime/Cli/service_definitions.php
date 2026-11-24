@@ -30,6 +30,7 @@ use Psr\Container\ContainerInterface;
 use Uphptime\Check\CheckRunner;
 use Uphptime\Cli\CliApplication;
 use Uphptime\Cli\Commands\CheckRunCommand;
+use Uphptime\Cli\Commands\ConfigCheckCommand;
 use Uphptime\Cli\Commands\MaintenanceAddCommand;
 use Uphptime\Cli\Commands\MaintenanceListCommand;
 use Uphptime\Cli\Commands\MaintenanceRemoveCommand;
@@ -65,6 +66,7 @@ use Uphptime\Pinger\CacheRefreshRunner;
 use Uphptime\Scheduling\Lockfile;
 use Uphptime\Storage\Portability\StorageCopier;
 use Uphptime\Storage\Portability\StorageWiper;
+use Uphptime\Support\AtomicWriter;
 
 return [
     CheckRunCommand::class => factory(static fn(ContainerInterface $c): CheckRunCommand => new CheckRunCommand(
@@ -73,6 +75,7 @@ return [
         $c->get(ConsoleOutputInterface::class),
     )),
     CliApplication::class => factory(static fn(ContainerInterface $c): CliApplication => new CliApplication([
+        'config:check' => $c->get(ConfigCheckCommand::class),
         'sites:add' => $c->get(SitesAddCommand::class),
         'sites:list' => $c->get(SitesListCommand::class),
         'sites:remove' => $c->get(SitesRemoveCommand::class),
@@ -103,6 +106,11 @@ return [
         'storage:import' => $c->get(StorageImportCommand::class),
         'storage:migrate-timezone' => $c->get(StorageMigrateTimezoneCommand::class),
     ], $c->get(ConsoleOutputInterface::class))),
+    ConfigCheckCommand::class => factory(static fn(ContainerInterface $c): ConfigCheckCommand => new ConfigCheckCommand(
+        $c->get('config.path'),
+        $c->get(AtomicWriter::class),
+        $c->get(ConsoleOutputInterface::class),
+    )),
     ConsoleOutputInterface::class => factory(static fn(): ConsoleOutputInterface => new StreamConsoleOutput(STDOUT, STDERR)),
     MaintenanceAddCommand::class => autowire(),
     MaintenanceListCommand::class => autowire(),

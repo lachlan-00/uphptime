@@ -55,6 +55,7 @@ final class DicBuilder
         if ($configPath !== null) {
             $builder->addDefinitions([
                 Config::class => factory(static fn(): Config => (new ConfigLoader())->load($configPath)),
+                'config.path' => factory(static fn(): string => $configPath),
             ]);
         }
 

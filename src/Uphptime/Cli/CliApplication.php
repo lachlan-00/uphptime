@@ -33,6 +33,7 @@ use Throwable;
 final class CliApplication
 {
     private const GROUP_LABELS = [
+        'config' => 'Config',
         'sites' => 'Sites',
         'maintenance' => 'Maintenance windows',
         'check' => 'Checks',
