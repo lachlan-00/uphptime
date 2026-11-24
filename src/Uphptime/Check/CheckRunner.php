@@ -80,6 +80,18 @@ final class CheckRunner
         ];
     }
 
+    // Read-only; lets a lock-blocked invocation report due-but-unchecked sites instead of a bare error.
+    public function overlapSnapshot(): RunSummary
+    {
+        $sites = $this->siteRepository->all();
+        $due   = count(array_filter(
+            $sites,
+            fn(Site $site): bool => $site->enabled && $site->state->nextDueAt <= $this->clock->now(),
+        ));
+
+        return new RunSummary(count($sites), 0, 0, $due, 0, 0, 0);
+    }
+
     public function run(?int $budgetSecondsOverride = null): RunSummary
     {
         $startedAtMs = $this->nowMs();
@@ -103,7 +115,7 @@ final class CheckRunner
             $checked++;
         }
 
-        return new RunSummary($checked, $skipped, $rollupsClosed, $prunedFiles, $this->nowMs() - $startedAtMs);
+        return new RunSummary(count($this->siteRepository->all()), $checked, $skipped, 0, $rollupsClosed, $prunedFiles, $this->nowMs() - $startedAtMs);
     }
 
     /** @param array<string, mixed>|null $evidence */

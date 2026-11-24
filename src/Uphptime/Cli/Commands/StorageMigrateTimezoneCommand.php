@@ -39,6 +39,7 @@ use Uphptime\Support\AtomicWriter;
 /**
  * Re-partitions JSONL history from UTC-dated files to the configured timezone and deletes rollups
  * so they rebuild from the corrected history on the next check:run. A no-op for PDO backends.
+ * Idempotent and self-deduplicating, so repeated --force runs never grow the data set.
  */
 final class StorageMigrateTimezoneCommand implements CommandInterface
 {
@@ -118,6 +119,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
             'files_migrated' => 0,
             'records_moved' => 0,
             'records_in_place' => 0,
+            'records_deduplicated' => 0,
             'rollups_deleted' => 0,
             'errors' => [],
         ];
@@ -144,7 +146,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
 
             ksort($files);
 
-            // Read all records from all files, grouped by their original UTC date.
+            // Grouped by target date; already covers a target-dated file's own content, so the write step below must never re-read and re-append it (that's what used to double every unmoved record).
             $allRecords = [];
             foreach ($files as $utcDate => $filePath) {
                 $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -174,55 +176,56 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
                 }
             }
 
+            // Dedupe (left-over exact repeats from a prior buggy run collapse here) and sort chronologically, computed before anything is written so dry-run matches --force exactly.
+            $totalRead     = 0;
+            $dedupedByDate = [];
+            foreach ($allRecords as $targetDate => $records) {
+                $totalRead += count($records);
+                $deduped    = $this->deduplicate($records);
+                usort($deduped, static fn(HistoryRecord $a, HistoryRecord $b): int => $a->ts <=> $b->ts);
+                $dedupedByDate[$targetDate] = $deduped;
+                $stats['records_deduplicated'] += count($records) - count($deduped);
+            }
+
+            // Quality check: a migration only redistributes/dedupes, never invents records - if the rebuild would write more than it read, abort this site untouched instead of risking its data.
+            $totalToWrite = array_sum(array_map('count', $dedupedByDate));
+            if ($totalToWrite > $totalRead) {
+                $stats['errors'][] = sprintf(
+                    'Site %s: refusing to write - rebuilding would produce %d records from %d read; left its history untouched.',
+                    $siteId,
+                    $totalToWrite,
+                    $totalRead,
+                );
+
+                continue;
+            }
+
             // In dry-run mode, just report what would happen.
             if ($dryRun) {
-                $recordsMoved   = 0;
-                $recordsInPlace = 0;
-                foreach ($allRecords as $targetDate => $records) {
+                foreach ($dedupedByDate as $targetDate => $records) {
                     foreach ($records as $record) {
                         $originalUtcDate = $record->ts->format('Y-m-d');
                         if ($originalUtcDate === $targetDate) {
-                            $recordsInPlace++;
+                            $stats['records_in_place']++;
                         } else {
-                            $recordsMoved++;
+                            $stats['records_moved']++;
                         }
                     }
                 }
 
-                $stats['records_moved'] += $recordsMoved;
-                $stats['records_in_place'] += $recordsInPlace;
                 $stats['files_migrated'] += count($files);
 
                 continue;
             }
 
-            // Write records to their new timezone-dated files.
-            foreach ($allRecords as $targetDate => $records) {
+            // Replaces whatever was at each path - the read above already folded in its pre-existing content.
+            foreach ($dedupedByDate as $targetDate => $records) {
                 $newPath = $siteHistoryDir . '/' . $targetDate . '.jsonl';
 
-                // If a file with this target date already exists, append to it.
-                $existingRecords = [];
-                if (is_file($newPath)) {
-                    $existingLines = file($newPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                    if ($existingLines !== false) {
-                        foreach ($existingLines as $line) {
-                            $line = trim($line);
-                            if ($line !== '') {
-                                $existingRecords[] = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-                            }
-                        }
-                    }
-                }
-
-                // Combine existing records with new records.
-                $allLinesForFile = [];
-                foreach ($existingRecords as $existingData) {
-                    $allLinesForFile[] = json_encode($existingData, JSON_THROW_ON_ERROR) . "\n";
-                }
-
+                $lines = [];
                 foreach ($records as $record) {
-                    $allLinesForFile[] = json_encode($record->toArray(), JSON_THROW_ON_ERROR) . "\n";
-                    $originalUtcDate   = $record->ts->format('Y-m-d');
+                    $lines[]         = json_encode($record->toArray(), JSON_THROW_ON_ERROR) . "\n";
+                    $originalUtcDate = $record->ts->format('Y-m-d');
                     if ($originalUtcDate === $targetDate) {
                         $stats['records_in_place']++;
                     } else {
@@ -230,23 +233,16 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
                     }
                 }
 
-                // Write atomically.
-                $this->writer->write($newPath, implode('', $allLinesForFile));
+                $this->writer->write($newPath, implode('', $lines));
             }
 
-            // Delete the old UTC-dated files that are no longer needed.
+            // A file is still needed only if its own date's rebuilt bucket kept a record that originated on that UTC date.
             foreach ($files as $utcDate => $filePath) {
-                $newPath = $siteHistoryDir . '/' . $utcDate . '.jsonl';
-                // Only delete if every record from this UTC date moved to a different file.
                 $stillNeeded = false;
-                foreach ($allRecords as $targetDate => $records) {
-                    if ($targetDate === $utcDate) {
-                        foreach ($records as $record) {
-                            if ($record->ts->format('Y-m-d') === $utcDate) {
-                                $stillNeeded = true;
-                                break 2;
-                            }
-                        }
+                foreach ($dedupedByDate[$utcDate] ?? [] as $record) {
+                    if ($record->ts->format('Y-m-d') === $utcDate) {
+                        $stillNeeded = true;
+                        break;
                     }
                 }
 
@@ -283,6 +279,7 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
             'files_migrated' => $stats['files_migrated'],
             'records_moved' => $stats['records_moved'],
             'records_in_place' => $stats['records_in_place'],
+            'records_deduplicated' => $stats['records_deduplicated'],
             'rollups_deleted' => $stats['rollups_deleted'],
             'next_step' => 'Run "check:run" to rebuild rollups from corrected history.',
         ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
@@ -296,5 +293,28 @@ final class StorageMigrateTimezoneCommand implements CommandInterface
         }
 
         return 0;
+    }
+
+    // Drops exact repeats, keeping the first occurrence of each in order.
+    /**
+     * @param HistoryRecord[] $records
+     * @return HistoryRecord[]
+     */
+    private function deduplicate(array $records): array
+    {
+        $seen    = [];
+        $deduped = [];
+
+        foreach ($records as $record) {
+            $signature = json_encode($record->toArray(), JSON_THROW_ON_ERROR);
+            if (isset($seen[$signature])) {
+                continue;
+            }
+
+            $seen[$signature] = true;
+            $deduped[]        = $record;
+        }
+
+        return $deduped;
     }
 }

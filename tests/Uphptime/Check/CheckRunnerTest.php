@@ -78,12 +78,35 @@ final class CheckRunnerTest extends TestCase
 
         $summary = $this->buildRunner($sites, $history, $clock, $checker, $this->config(runBudgetSeconds: 0))->run();
 
+        self::assertSame(2, $summary->totalSites);
         self::assertSame(0, $summary->checked);
         self::assertSame(2, $summary->skippedDueToBudget);
+        self::assertSame(0, $summary->skippedDueToOverlap, 'this run acquired the lock itself, so it saw no overlap');
 
         $site = $sites->find('a');
         self::assertNotNull($site);
         self::assertEquals(new DateTimeImmutable('2026-01-01T00:00:00+00:00'), $site->state->nextDueAt, 'an unreached site keeps its old next_due_at');
+    }
+
+    public function testOverlapSnapshotReportsTotalAndDueSitesWithoutCheckingAny(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:10:00+00:00');
+        $sites = new InMemorySiteRepository();
+        // Due.
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
+        // Not yet due.
+        $sites->save($this->site('b', new DateTimeImmutable('2026-01-01T00:20:00+00:00')));
+        $checker = new FakeChecker();
+        $runner  = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config());
+
+        $snapshot = $runner->overlapSnapshot();
+
+        self::assertSame(2, $snapshot->totalSites);
+        self::assertSame(0, $snapshot->checked);
+        self::assertSame(0, $snapshot->skippedDueToBudget);
+        self::assertSame(1, $snapshot->skippedDueToOverlap, 'only site a is due right now');
+        self::assertSame(0, $snapshot->rollupsClosed);
+        self::assertSame(0, $snapshot->prunedFiles);
     }
 
     public function testCanaryDisagreementUnresolvedWhenNoThirdPeerExistsLeavesSiteStateUntouched(): void

@@ -45,7 +45,13 @@ final class CheckRunCommand implements CommandInterface
     public function run(array $args): int
     {
         if (!$this->lockfile->acquire()) {
-            $this->output->writeErrorLine(json_encode(['error' => 'Another check:run is already in progress.'], JSON_THROW_ON_ERROR));
+            $snapshot = $this->checkRunner->overlapSnapshot();
+
+            $this->output->writeErrorLine(json_encode([
+                'error' => 'Another check:run is already in progress.',
+                'total_sites' => $snapshot->totalSites,
+                'skipped_due_to_overlap' => $snapshot->skippedDueToOverlap,
+            ], JSON_THROW_ON_ERROR));
 
             return 2;
         }
@@ -56,8 +62,10 @@ final class CheckRunCommand implements CommandInterface
             $summary = $this->checkRunner->run($budget);
 
             $this->output->writeLine(json_encode([
+                'total_sites' => $summary->totalSites,
                 'checked' => $summary->checked,
                 'skipped_due_to_budget' => $summary->skippedDueToBudget,
+                'skipped_due_to_overlap' => $summary->skippedDueToOverlap,
                 'rollups_closed' => $summary->rollupsClosed,
                 'pruned_files' => $summary->prunedFiles,
                 'duration_ms' => $summary->durationMs,

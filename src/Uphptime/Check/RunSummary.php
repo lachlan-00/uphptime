@@ -31,8 +31,10 @@ namespace Uphptime\Check;
 final class RunSummary
 {
     public function __construct(
+        public readonly int $totalSites,
         public readonly int $checked,
         public readonly int $skippedDueToBudget,
+        public readonly int $skippedDueToOverlap,
         public readonly int $rollupsClosed,
         public readonly int $prunedFiles,
         public readonly int $durationMs,

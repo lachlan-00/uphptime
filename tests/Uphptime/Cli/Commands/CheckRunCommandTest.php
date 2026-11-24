@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace Uphptime\Tests\Cli\Commands;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Uphptime\Check\CheckResult;
 use Uphptime\Check\CheckRunner;
@@ -33,6 +34,10 @@ use Uphptime\Config\Config;
 use Uphptime\Reporting\RetentionPruner;
 use Uphptime\Reporting\RollupBuilder;
 use Uphptime\Scheduling\Lockfile;
+use Uphptime\Site\CheckType;
+use Uphptime\Site\Site;
+use Uphptime\Site\SiteRuntimeState;
+use Uphptime\Site\SiteState;
 use Uphptime\Site\SiteStateMachine;
 use Uphptime\Tests\Api\ChallengeToken\InMemoryChallengeTokenStore;
 use Uphptime\Tests\Check\FakeChecker;
@@ -52,6 +57,8 @@ final class CheckRunCommandTest extends TestCase
         self::assertTrue($holder->acquire());
 
         $sites   = new InMemorySiteRepository();
+        $sites->save($this->dueSite('a'));
+        $sites->save($this->dueSite('b'));
         $history = new InMemoryHistoryRepository();
         $rollups = new InMemoryRollupRepository();
         $clock   = new FakeClock();
@@ -75,9 +82,35 @@ final class CheckRunCommandTest extends TestCase
         $output  = new FakeConsoleOutput();
         $command = new CheckRunCommand($runner, new Lockfile($lockPath), $output);
         self::assertSame(2, $command->run([]));
-        self::assertNotNull($output->lastErrorLine());
+
+        $errorLine = $output->lastErrorLine();
+        self::assertNotNull($errorLine);
+        $decoded = json_decode($errorLine, true);
+        self::assertSame('Another check:run is already in progress.', $decoded['error']);
+        self::assertSame(2, $decoded['total_sites']);
+        self::assertSame(2, $decoded['skipped_due_to_overlap'], 'both sites were due and left unchecked by the overlapping run');
 
         $holder->release();
         @unlink($lockPath);
+    }
+
+    private function dueSite(string $id): Site
+    {
+        $nextDueAt = new DateTimeImmutable('2025-01-01T00:00:00+00:00');
+
+        return new Site(
+            $id,
+            $id,
+            'https://example.test/',
+            null,
+            null,
+            CheckType::Http,
+            null,
+            null,
+            null,
+            true,
+            $nextDueAt,
+            new SiteRuntimeState(SiteState::Unknown, 0, null, null, $nextDueAt, null),
+        );
     }
 }

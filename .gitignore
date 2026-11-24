@@ -7,3 +7,4 @@ docker/crontab
 build/
 docker/with-dashboard/docker/
 vendor/
+data/run.lock
