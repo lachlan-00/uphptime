@@ -83,6 +83,22 @@ final class SiteReportSetBuilderTest extends TestCase
         self::assertNull($this->builder(new InMemorySiteRepository())->build('decade', null, null, null));
     }
 
+    public function testResolvePeriodInfersRangeFromStartOrEndAlone(): void
+    {
+        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, '2026-01-01', null));
+        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, null, '2026-01-05'));
+    }
+
+    public function testRangePeriodRequiresBothStartAndEndWithStartNotAfterEnd(): void
+    {
+        $sites = new InMemorySiteRepository();
+
+        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-05', null));
+        self::assertNull($this->builder($sites)->build('range', null, null, null, null, '2026-01-05'));
+        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-10', '2026-01-05'));
+        self::assertNotNull($this->builder($sites)->build('range', null, null, null, '2026-01-05', '2026-01-10'));
+    }
+
     private function builder(InMemorySiteRepository $sites): SiteReportSetBuilder
     {
         $clock      = new FakeClock('2026-01-15T00:00:00+00:00');

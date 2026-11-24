@@ -254,7 +254,7 @@ final class OpenApiSpecBuilder
                         'name' => 'period',
                         'in' => 'query',
                         'required' => false,
-                        'schema' => ['type' => 'string', 'enum' => ['day', 'month', 'overall'], 'default' => 'overall'],
+                        'schema' => ['type' => 'string', 'enum' => ['day', 'month', 'range', 'overall'], 'default' => 'overall'],
                     ],
                     [
                         'name' => 'date',
@@ -269,6 +269,20 @@ final class OpenApiSpecBuilder
                         'required' => false,
                         'schema' => ['type' => 'string'],
                         'description' => 'YYYY-MM, used only when period=month; defaults to the current month.',
+                    ],
+                    [
+                        'name' => 'start',
+                        'in' => 'query',
+                        'required' => false,
+                        'schema' => ['type' => 'string', 'format' => 'date'],
+                        'description' => 'Required when period=range: the first whole calendar day included, inclusive.',
+                    ],
+                    [
+                        'name' => 'end',
+                        'in' => 'query',
+                        'required' => false,
+                        'schema' => ['type' => 'string', 'format' => 'date'],
+                        'description' => 'Required when period=range: the last whole calendar day included, inclusive.',
                     ],
                     [
                         'name' => 'group',
@@ -292,7 +306,8 @@ final class OpenApiSpecBuilder
                         'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ErrorResponse']]],
                     ],
                     '422' => [
-                        'description' => 'Unrecognized "period" value.',
+                        'description' => 'Unrecognized "period" value, or period=range with a missing/invalid '
+                            . '"start"/"end".',
                         'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ErrorResponse']]],
                     ],
                 ],

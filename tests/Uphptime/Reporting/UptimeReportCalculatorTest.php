@@ -69,6 +69,23 @@ final class UptimeReportCalculatorTest extends TestCase
         self::assertSame(0.0, $calculator->forDay('site-1', '2026-01-02')->uptimePercent());
     }
 
+    public function testForRangeSumsRollupsWithinBoundsInclusiveAndTodaysRawHistory(): void
+    {
+        $history = new InMemoryHistoryRepository();
+        $rollups = new InMemoryRollupRepository();
+        $rollups->write(new DailyRollup('site-1', '2026-01-01', 10, 10, 0, 0, 0, 10, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
+        $rollups->write(new DailyRollup('site-1', '2026-01-02', 10, 5, 5, 0, 0, 10, 0, 50.0, null, null, new DateTimeImmutable('2026-01-03')));
+        $rollups->write(new DailyRollup('site-1', '2026-01-10', 10, 0, 10, 0, 0, 10, 0, 0.0, null, null, new DateTimeImmutable('2026-01-11')));
+
+        $history->append('site-1', $this->record('2026-01-03T00:00:00+00:00', CheckOutcome::Pass));
+
+        $calculator = new UptimeReportCalculator($history, $rollups, new FakeClock('2026-01-03T12:00:00+00:00'));
+        $report     = $calculator->forRange('site-1', '2026-01-01', '2026-01-03');
+
+        self::assertSame(21, $report->checksTotal);
+        self::assertSame(16, $report->checksPass);
+    }
+
     public function testNoDataYetReturnsNullPercentagesNotADivisionError(): void
     {
         $calculator = new UptimeReportCalculator(new InMemoryHistoryRepository(), new InMemoryRollupRepository(), new FakeClock());

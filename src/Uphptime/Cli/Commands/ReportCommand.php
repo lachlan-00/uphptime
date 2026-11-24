@@ -37,7 +37,7 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Prints a day/month/overall uptime report as JSON for one site or a --group=, the latter sharing
+ * Prints a day/month/range/overall uptime report as JSON for one site or a --group=, the latter sharing
  * SiteReportSetBuilder with the HTTP report API so the two never disagree.
  */
 final class ReportCommand implements CommandInterface
@@ -87,10 +87,12 @@ final class ReportCommand implements CommandInterface
     private function runForGroup(string $group, array $options): int
     {
         $period = $options['period'] ?? null;
-        $result = $this->reportSetBuilder->build($period, $options['date'] ?? null, $options['month'] ?? null, $group);
+        $start  = $options['start'] ?? null;
+        $end    = $options['end'] ?? null;
+        $result = $this->reportSetBuilder->build($period, $options['date'] ?? null, $options['month'] ?? null, $group, $start, $end);
         if (!$result instanceof \Uphptime\Reporting\SiteReportSet) {
             $this->output->writeErrorLine(json_encode(
-                ['error' => sprintf('Unknown period "%s".', SiteReportSetBuilder::resolvePeriod($period, $options['date'] ?? null, $options['month'] ?? null))],
+                ['error' => sprintf('Unknown period "%s".', SiteReportSetBuilder::resolvePeriod($period, $options['date'] ?? null, $options['month'] ?? null, $start, $end))],
                 JSON_THROW_ON_ERROR,
             ));
 
@@ -112,7 +114,9 @@ final class ReportCommand implements CommandInterface
     private function runForOneSite(array $options, array $args): int
     {
         $identifier = $options['id'] ?? $options['name'] ?? $this->firstPositionalArg($args);
-        $period     = SiteReportSetBuilder::resolvePeriod($options['period'] ?? null, $options['date'] ?? null, $options['month'] ?? null);
+        $start      = $options['start'] ?? null;
+        $end        = $options['end'] ?? null;
+        $period     = SiteReportSetBuilder::resolvePeriod($options['period'] ?? null, $options['date'] ?? null, $options['month'] ?? null, $start, $end);
 
         $site = $identifier !== null ? $this->siteRepository->find($identifier) : null;
         if (!$site instanceof \Uphptime\Site\Site && $identifier !== null) {
@@ -136,9 +140,16 @@ final class ReportCommand implements CommandInterface
             return 1;
         }
 
+        if ($period === 'range' && ($start === null || $end === null || $start > $end)) {
+            $this->output->writeErrorLine(json_encode(['error' => 'Period "range" requires --start= and --end=, with --start <= --end.'], JSON_THROW_ON_ERROR));
+
+            return 1;
+        }
+
         $report = match ($period) {
             'day' => $this->calculator->forDay($site->id, $options['date'] ?? $this->clock->now()->format('Y-m-d')),
             'month' => $this->calculator->forMonth($site->id, $options['month'] ?? $this->clock->now()->format('Y-m')),
+            'range' => $this->calculator->forRange($site->id, (string) $start, (string) $end),
             'overall' => $this->calculator->overall($site->id),
             default => null,
         };

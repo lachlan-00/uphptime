@@ -34,7 +34,7 @@ use Uphptime\Storage\RollupRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Computes day/month/overall uptime from closed rollups plus today's raw history.
+ * Computes day/month/range/overall uptime from closed rollups plus today's raw history.
  */
 final class UptimeReportCalculator
 {
@@ -55,6 +55,25 @@ final class UptimeReportCalculator
         }
 
         return $this->fromRecords($this->historyRepository->readDay($siteId, $date));
+    }
+
+    // Inclusive of both $startDate and $endDate, each a whole calendar day (rollups are already day buckets).
+    public function forRange(string $siteId, string $startDate, string $endDate): UptimeReport
+    {
+        $rollups = [];
+        foreach ($this->rollupRepository->datesWithRollup($siteId) as $date) {
+            if ($date >= $startDate && $date <= $endDate) {
+                $rollup = $this->rollupRepository->read($siteId, $date);
+                if ($rollup instanceof \Uphptime\History\DailyRollup) {
+                    $rollups[] = $rollup;
+                }
+            }
+        }
+
+        $today   = $this->clock->now()->format('Y-m-d');
+        $records = ($today >= $startDate && $today <= $endDate) ? $this->historyRepository->readDay($siteId, $today) : [];
+
+        return $this->fromRollups($rollups)->merge($this->fromRecords($records));
     }
 
     public function forMonth(string $siteId, string $yearMonth): UptimeReport

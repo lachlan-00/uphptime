@@ -13,3 +13,4 @@
 * Report API, OpenAPI specification and Docker deployments, including a dashboard setup.
 * `check:run` output reports `total_sites` and `skipped_due_to_overlap` (sites left unchecked when the exclusive lock was already held by another run).
 * `storage:migrate-timezone --force` deduplicates history records and never writes more records than it read.
+* Report API, `bin/uphptime report` and the dashboard support `period=range` (`start`/`end`, whole calendar days inclusive) for custom multi-day reports such as a week.

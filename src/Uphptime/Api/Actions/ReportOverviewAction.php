@@ -49,9 +49,11 @@ final class ReportOverviewAction implements ActionInterface
         $period = is_string($query['period'] ?? null) ? $query['period'] : null;
         $date   = is_string($query['date'] ?? null) ? $query['date'] : null;
         $month  = is_string($query['month'] ?? null) ? $query['month'] : null;
+        $start  = is_string($query['start'] ?? null) ? $query['start'] : null;
+        $end    = is_string($query['end'] ?? null) ? $query['end'] : null;
         $group  = isset($query['group']) && is_string($query['group']) && $query['group'] !== '' ? $query['group'] : null;
 
-        $result = $this->builder->build($period, $date, $month, $group);
+        $result = $this->builder->build($period, $date, $month, $group, $start, $end);
         if (!$result instanceof \Uphptime\Reporting\SiteReportSet) {
             return $this->jsonResponse(422, ['error' => 'invalid_period']);
         }

@@ -44,8 +44,8 @@ final class SiteReportSetBuilder
         private readonly Config $config,
     ) {}
 
-    // An explicit --period= always wins; otherwise --date=/--month= alone implies which period was meant.
-    public static function resolvePeriod(?string $period, ?string $date, ?string $month): string
+    // An explicit --period= always wins; otherwise --date=/--month=/--start=+--end= alone implies which period was meant.
+    public static function resolvePeriod(?string $period, ?string $date, ?string $month, ?string $start = null, ?string $end = null): string
     {
         if ($period !== null) {
             return $period;
@@ -54,14 +54,18 @@ final class SiteReportSetBuilder
         return match (true) {
             $date !== null => 'day',
             $month !== null => 'month',
+            $start !== null || $end !== null => 'range',
             default => 'overall',
         };
     }
 
-    public function build(?string $period, ?string $date, ?string $month, ?string $group): ?SiteReportSet
+    public function build(?string $period, ?string $date, ?string $month, ?string $group, ?string $start = null, ?string $end = null): ?SiteReportSet
     {
-        $period = self::resolvePeriod($period, $date, $month);
-        if (!in_array($period, ['day', 'month', 'overall'], true)) {
+        $period = self::resolvePeriod($period, $date, $month, $start, $end);
+        if (!in_array($period, ['day', 'month', 'range', 'overall'], true)) {
+            return null;
+        }
+        if ($period === 'range' && ($start === null || $end === null || $start > $end)) {
             return null;
         }
 
@@ -74,7 +78,7 @@ final class SiteReportSetBuilder
         $overall = UptimeReport::empty();
         $items   = [];
         foreach ($sites as $site) {
-            $report  = $this->reportFor($site->id, $period, $date, $month, $now);
+            $report  = $this->reportFor($site->id, $period, $date, $month, $now, $start, $end);
             $overall = $overall->merge($report);
             $item    = [
                 'id' => $site->id,
@@ -94,11 +98,12 @@ final class SiteReportSetBuilder
         return new SiteReportSet($period, $now, $items, $overall);
     }
 
-    private function reportFor(string $siteId, string $period, ?string $date, ?string $month, DateTimeImmutable $now): UptimeReport
+    private function reportFor(string $siteId, string $period, ?string $date, ?string $month, DateTimeImmutable $now, ?string $start, ?string $end): UptimeReport
     {
         return match ($period) {
             'day' => $this->calculator->forDay($siteId, $date ?? $now->format('Y-m-d')),
             'month' => $this->calculator->forMonth($siteId, $month ?? $now->format('Y-m')),
+            'range' => $this->calculator->forRange($siteId, (string) $start, (string) $end),
             default => $this->calculator->overall($siteId),
         };
     }

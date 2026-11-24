@@ -83,6 +83,32 @@ final class ReportOverviewActionTest extends TestCase
         self::assertSame(422, $response->getStatusCode());
     }
 
+    public function testRangeMergesRollupsAcrossTheRequestedDays(): void
+    {
+        $sites   = new InMemorySiteRepository();
+        $sites->save($this->site('a', []));
+
+        $rollups = new InMemoryRollupRepository();
+        $rollups->write(new DailyRollup('a', '2026-01-01', 10, 10, 0, 0, 0, 10, 0, 100.0, null, null, new DateTimeImmutable('2026-01-02')));
+        $rollups->write(new DailyRollup('a', '2026-01-02', 10, 5, 5, 0, 0, 10, 0, 50.0, null, null, new DateTimeImmutable('2026-01-03')));
+
+        $body = $this->decoded($this->action($sites, $rollups)->handle(
+            $this->requestFor(['period' => 'range', 'start' => '2026-01-01', 'end' => '2026-01-02']),
+        ));
+
+        self::assertSame(20, $body['overall']['checks_total']);
+        self::assertSame(15, $body['overall']['checks_pass']);
+    }
+
+    public function testRangeMissingEndIs422(): void
+    {
+        $response = $this->action(new InMemorySiteRepository())->handle(
+            $this->requestFor(['period' => 'range', 'start' => '2026-01-01']),
+        );
+
+        self::assertSame(422, $response->getStatusCode());
+    }
+
     public function testWithNoSitesReturnsAnEmptyOverallReport(): void
     {
         $body = $this->decoded($this->action(new InMemorySiteRepository())->handle($this->requestFor([])));
