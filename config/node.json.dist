@@ -2,6 +2,7 @@
     "schema_version": 1,
     "data_dir": "data",
     "check_interval_seconds": 300,
+    "check_due_grace_seconds": 30,
     "retention_days": 90,
     "request_timeout_seconds": 10,
     "run_budget_seconds": 240,

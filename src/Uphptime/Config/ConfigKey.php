@@ -32,6 +32,7 @@ enum ConfigKey: string
 {
     case CanarySampleRate                            = 'canary_sample_rate';
     case ChallengeTokenTtlSeconds                    = 'challenge_token_ttl_seconds';
+    case CheckDueGraceSeconds                        = 'check_due_grace_seconds';
     case CheckIntervalSeconds                        = 'check_interval_seconds';
     case ClockSkewSeconds                            = 'clock_skew_seconds';
     case DataDirectory                               = 'data_dir';
@@ -91,6 +92,7 @@ enum ConfigKey: string
     {
         return match ($this) {
             self::DataDirectory => 'data',
+            self::CheckDueGraceSeconds => 30,
             self::CheckIntervalSeconds => 300,
             self::RetentionDays => 90,
             self::RequestTimeoutSeconds, self::PeerRequestTimeoutSeconds, self::PingerCacheRefreshLeadSeconds => 10,
@@ -162,6 +164,7 @@ enum ConfigKey: string
     {
         return match ($this) {
             self::ChallengeTokenTtlSeconds,
+            self::CheckDueGraceSeconds,
             self::CheckIntervalSeconds,
             self::ClockSkewSeconds,
             self::DefaultPeerRateLimitPerMinute,

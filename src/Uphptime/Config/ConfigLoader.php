@@ -82,6 +82,7 @@ final class ConfigLoader
             challengeTokenTtlSeconds: $this->intValue($data, ConfigKey::ChallengeTokenTtlSeconds),
             reportApiKey: $this->stringValue($data, ConfigKey::ReportApiKey),
             reportCorsAllowedOrigin: $this->stringValue($data, ConfigKey::ReportCorsAllowedOrigin),
+            checkDueGraceSeconds: $this->intValue($data, ConfigKey::CheckDueGraceSeconds),
         );
     }
 

@@ -81,6 +81,7 @@ final class Config
         public readonly int $challengeTokenTtlSeconds = 300,
         public readonly string $reportApiKey = '',
         public readonly string $reportCorsAllowedOrigin = '*',
+        public readonly int $checkDueGraceSeconds = 30,
     ) {}
 
     // Returns the process-wide config instance, loading it from $configPath on first use.

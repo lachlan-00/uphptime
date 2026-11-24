@@ -45,8 +45,9 @@ use Uphptime\Storage\SiteRepositoryInterface;
 use Uphptime\Support\ClockInterface;
 
 /**
- * Orchestrates one scheduled pass: closes finished rollups, prunes, then checks due sites within
- * budget, delegating to a peer when one is usable and falling back to a self-check otherwise.
+ * Orchestrates one scheduled pass: closes finished rollups, prunes, then checks due (or due within
+ * `check_due_grace_seconds`) sites within budget, delegating to a peer when one is usable and
+ * falling back to a self-check otherwise.
  */
 final class CheckRunner
 {
@@ -187,11 +188,14 @@ final class CheckRunner
         $due      = [];
         $disabled = 0;
         $notDue   = 0;
+        // A site due only a few seconds from now is treated as due: cron/process-startup jitter otherwise
+        // leaves a fixed-phase site landing just past "now" on some ticks, stranding it a whole interval.
+        $dueThreshold = $now->modify(sprintf('+%d seconds', $this->config->checkDueGraceSeconds));
 
         foreach ($sites as $site) {
             if (!$site->enabled) {
                 $disabled++;
-            } elseif ($site->state->nextDueAt <= $now) {
+            } elseif ($site->state->nextDueAt <= $dueThreshold) {
                 $due[] = $site;
             } else {
                 $notDue++;

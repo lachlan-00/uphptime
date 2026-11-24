@@ -14,3 +14,4 @@
 * `check:run` output reports `total_sites` and `skipped_due_to_overlap` (sites left unchecked when the exclusive lock was already held by another run).
 * `storage:migrate-timezone --force` deduplicates history records and never writes more records than it read.
 * Report API, `bin/uphptime report` and the dashboard support `period=range` (`start`/`end`, whole calendar days inclusive) for custom multi-day reports such as a week.
+* `check_due_grace_seconds` (default 30) treats a site as due slightly ahead of its `next_due_at`, so ordinary cron/process-startup jitter never strands it a whole extra interval unchecked.
