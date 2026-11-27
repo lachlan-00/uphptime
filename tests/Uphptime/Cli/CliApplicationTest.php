@@ -54,6 +54,25 @@ final class CliApplicationTest extends TestCase
         self::assertNull($output->lastErrorLine());
     }
 
+    public function testFailedSchemaCheckBlocksOrdinaryCommandsButNotUpgrade(): void
+    {
+        $blocked = new FakeCommand(0);
+        $upgrade = new FakeCommand(0);
+        $output  = new FakeConsoleOutput();
+        $check   = static function (): void {
+            throw new \RuntimeException('schema out of date');
+        };
+        $app = new CliApplication(['check:run' => $blocked, 'storage:upgrade' => $upgrade, 'config:check' => new FakeCommand(0)], $output, $check);
+
+        self::assertSame(1, $app->run(['bin/uphptime', 'check:run', '--x']));
+        self::assertSame([], $blocked->receivedArgs, 'the command must not have run');
+        self::assertStringContainsString('schema out of date', (string) $output->lastErrorLine());
+
+        self::assertSame(0, $app->run(['bin/uphptime', 'storage:upgrade', '--y']));
+        self::assertSame(0, $app->run(['bin/uphptime', 'config:check']));
+        self::assertSame(['--y'], $upgrade->receivedArgs);
+    }
+
     public function testKnownActionDispatchesToItsCommandWithTheRemainingArguments(): void
     {
         $command = new FakeCommand(0);

@@ -57,15 +57,18 @@ use Uphptime\Cli\Commands\ReportCommand;
 use Uphptime\Cli\Commands\SitesAddCommand;
 use Uphptime\Cli\Commands\SitesListCommand;
 use Uphptime\Cli\Commands\SitesRemoveCommand;
+use Uphptime\Cli\Commands\StorageCheckCommand;
 use Uphptime\Cli\Commands\StorageExportCommand;
 use Uphptime\Cli\Commands\StorageImportCommand;
 use Uphptime\Cli\Commands\StorageInstallCommand;
 use Uphptime\Cli\Commands\StorageMigrateTimezoneCommand;
+use Uphptime\Cli\Commands\StorageUpgradeCommand;
 use Uphptime\Cli\ConsoleOutputInterface;
 use Uphptime\Cli\PeerKeyOptionResolver;
 use Uphptime\Cli\StreamConsoleOutput;
 use Uphptime\Pinger\CacheRefreshRunner;
 use Uphptime\Scheduling\Lockfile;
+use Uphptime\Storage\Pdo\SchemaGuard;
 use Uphptime\Storage\Portability\StorageCopier;
 use Uphptime\Storage\Portability\StorageWiper;
 use Uphptime\Support\AtomicWriter;
@@ -111,10 +114,12 @@ return [
         'peers:allowlist:clear' => $c->get(PeersAllowlistClearCommand::class),
         'peers:reputation:reset' => $c->get(PeersReputationResetCommand::class),
         'storage:install' => $c->get(StorageInstallCommand::class),
+        'storage:upgrade' => $c->get(StorageUpgradeCommand::class),
+        'storage:check' => $c->get(StorageCheckCommand::class),
         'storage:export' => $c->get(StorageExportCommand::class),
         'storage:import' => $c->get(StorageImportCommand::class),
         'storage:migrate-timezone' => $c->get(StorageMigrateTimezoneCommand::class),
-    ], $c->get(ConsoleOutputInterface::class))),
+    ], $c->get(ConsoleOutputInterface::class), static fn() => $c->get(SchemaGuard::class)->assertCurrent())),
     ConfigCheckCommand::class => factory(static fn(ContainerInterface $c): ConfigCheckCommand => new ConfigCheckCommand(
         $c->get('config.path'),
         $c->get(AtomicWriter::class),
@@ -155,5 +160,7 @@ return [
     StorageImportCommand::class => autowire(),
     StorageInstallCommand::class => autowire(),
     StorageMigrateTimezoneCommand::class => autowire(),
+    StorageUpgradeCommand::class => autowire(),
+    StorageCheckCommand::class => autowire(),
     StorageWiper::class => autowire(),
 ];

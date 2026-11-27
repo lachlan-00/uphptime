@@ -45,6 +45,8 @@ use Uphptime\Storage\Pdo\PdoPeerReputationRepository;
 use Uphptime\Storage\Pdo\PdoRollupRepository;
 use Uphptime\Storage\Pdo\PdoSiteRepository;
 use Uphptime\Storage\Pdo\PostgreSqlDialect;
+use Uphptime\Storage\Pdo\SchemaGuard;
+use Uphptime\Storage\Pdo\SchemaMigrator;
 use Uphptime\Storage\Pdo\SqlDialect;
 use Uphptime\Storage\PeerRepositoryInterface;
 use Uphptime\Storage\PeerReputationRepositoryInterface;
@@ -60,6 +62,8 @@ return [
     PDO::class => factory(
         static fn(ContainerInterface $c): PDO => $c->get(PdoConnectionFactory::class)->create($c->get(Config::class)),
     ),
+    SchemaGuard::class => autowire(),
+    SchemaMigrator::class => factory(static fn(ContainerInterface $c): SchemaMigrator => new SchemaMigrator($c->get(Config::class)->storageBackend)),
     SqlDialect::class => factory(static fn(ContainerInterface $c): SqlDialect => $c->get(Config::class)->storageBackend === 'pgsql' ? new PostgreSqlDialect() : new MySqlDialect()),
     HistoryRepositoryInterface::class => factory(static function (ContainerInterface $c): HistoryRepositoryInterface {
         $config = $c->get(Config::class);

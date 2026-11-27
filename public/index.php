@@ -32,6 +32,8 @@ use Uphptime\Api\HmacAuthMiddleware;
 use Uphptime\Api\ReportApiKeyMiddleware;
 use Uphptime\Config\Config;
 use Uphptime\DicBuilder;
+use Uphptime\Storage\Pdo\SchemaGuard;
+use Uphptime\Storage\Pdo\SchemaVersionException;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -46,6 +48,15 @@ $config    = $container->get(Config::class);
 
 if (!$config->pingerEnabled) {
     http_response_code(404);
+    exit;
+}
+
+try {
+    $container->get(SchemaGuard::class)->assertCurrent();
+} catch (SchemaVersionException $schemaVersionException) {
+    http_response_code(503);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => $schemaVersionException->getMessage()]);
     exit;
 }
 

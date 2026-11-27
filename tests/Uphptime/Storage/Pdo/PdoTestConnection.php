@@ -66,4 +66,25 @@ final class PdoTestConnection
             return null;
         }
     }
+
+    // Removes every table in the test database, whatever created it, so a schema test starts truly empty.
+    public static function dropAllTables(PDO $pdo, string $dialect): void
+    {
+        if ($dialect === 'pgsql') {
+            $tables = $pdo->query('SELECT tablename FROM pg_tables WHERE schemaname = current_schema()');
+            foreach ($tables === false ? [] : $tables->fetchAll(PDO::FETCH_COLUMN) as $table) {
+                $pdo->exec(sprintf('DROP TABLE IF EXISTS "%s" CASCADE', $table));
+            }
+
+            return;
+        }
+
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+        $tables = $pdo->query('SHOW TABLES');
+        foreach ($tables === false ? [] : $tables->fetchAll(PDO::FETCH_COLUMN) as $table) {
+            $pdo->exec(sprintf('DROP TABLE IF EXISTS `%s`', $table));
+        }
+
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+    }
 }

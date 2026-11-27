@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Uphptime\Cli\Commands\StorageInstallCommand;
 use Uphptime\Config\Config;
 use Uphptime\Storage\Pdo\PdoConnectionFactory;
+use Uphptime\Storage\Pdo\SchemaMigrator;
 use Uphptime\Tests\Cli\FakeConsoleOutput;
 use Uphptime\Tests\Storage\Pdo\PdoTestConnection;
 
@@ -38,7 +39,7 @@ final class StorageInstallCommandTest extends TestCase
     {
         $config  = $this->config('json');
         $output  = new FakeConsoleOutput();
-        $command = new StorageInstallCommand($config, new PdoConnectionFactory(), $output);
+        $command = new StorageInstallCommand($config, new PdoConnectionFactory(), new SchemaMigrator('json'), $output);
 
         self::assertSame(0, $command->run([]));
 
@@ -67,15 +68,9 @@ final class StorageInstallCommandTest extends TestCase
             ));
         }
 
-        foreach (['peer_target_allowlist', 'peer_keys', 'peers', 'history', 'rollups', 'sites', 'peer_reputation', 'schema_version'] as $table) {
-            try {
-                $pdo->exec('DROP TABLE IF EXISTS ' . $table);
-            } catch (\PDOException) {
-                // table may not exist yet on a fresh container - nothing to drop.
-            }
-        }
+        PdoTestConnection::dropAllTables($pdo, $dialect);
 
-        $command = new StorageInstallCommand($this->config($dialect), new PdoConnectionFactory(), new FakeConsoleOutput());
+        $command = new StorageInstallCommand($this->config($dialect), new PdoConnectionFactory(), new SchemaMigrator($dialect), new FakeConsoleOutput());
 
         self::assertSame(0, $command->run([]));
 
@@ -86,12 +81,18 @@ final class StorageInstallCommandTest extends TestCase
         // Second run must also succeed - every statement is idempotent.
         self::assertSame(0, $command->run([]));
 
-        // An existing pre-upgrade history table is upgraded without losing rows.
+        self::assertSame(SchemaMigrator::CURRENT_VERSION, (new SchemaMigrator($dialect))->installedVersion($pdo));
+
+        // A database from before versioning (no recorded version, older columns) is upgraded without losing rows.
+        $pdo->exec('DELETE FROM schema_version');
+        $pdo->exec('ALTER TABLE rollups DROP COLUMN checks_confirmed_down');
         $pdo->exec("INSERT INTO history (site_id, ts, check_type, source, outcome, state_before, state_after) VALUES ('site-1', '2026-01-01 00:00:00', 'http', 'self', 'pass', 'unknown', 'up')");
         $pdo->exec('ALTER TABLE history DROP COLUMN peer_id');
         $pdo->exec('ALTER TABLE history DROP COLUMN peer_label');
         self::assertSame(0, $command->run([]));
         self::assertNotFalse($pdo->query('SELECT peer_id, peer_label FROM history'));
+        self::assertNotFalse($pdo->query('SELECT checks_confirmed_down FROM rollups'));
+        self::assertSame(SchemaMigrator::CURRENT_VERSION, (new SchemaMigrator($dialect))->installedVersion($pdo));
         self::assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM history')->fetchColumn());
         self::assertSame(0, $command->run([]));
     }

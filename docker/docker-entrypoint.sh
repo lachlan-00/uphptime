@@ -59,12 +59,12 @@ else
     sed "s/__HTTP_PORT__/$PORT/g" /usr/local/share/uphptime/apache-vhost-http.conf > /etc/apache2/sites-available/000-default.conf
 fi
 
-# storage:install is idempotent (CREATE TABLE IF NOT EXISTS), safe to run on every start; a no-op when
-# storage_backend is "json".
+# storage:upgrade creates the schema on a fresh database and applies pending upgrades otherwise; it is idempotent,
+# so safe on every start, and a failure stops the container (set -e). A no-op when storage_backend is "json".
 STORAGE_BACKEND=$(php -r '$c = json_decode(file_get_contents($argv[1]), true); echo $c["storage_backend"] ?? "json";' "$CONFIG_FILE")
 if [ "$STORAGE_BACKEND" != "json" ]; then
-    echo "=> storage_backend is \"$STORAGE_BACKEND\", running storage:install"
-    su -s /bin/sh www-data -c "php $APP_ROOT/bin/uphptime storage:install"
+    echo "=> storage_backend is \"$STORAGE_BACKEND\", running storage:upgrade"
+    su -s /bin/sh www-data -c "php $APP_ROOT/bin/uphptime storage:upgrade"
 fi
 
 exec "$@"

@@ -41,7 +41,7 @@ final class PdoExceptionTranslator
 
         if (in_array($sqlstate, self::MISSING_TABLE_SQLSTATES, true)) {
             throw new StorageNotInstalledException(
-                'Required tables are missing. Run "bin/uphptime storage:install" to create them.',
+                'Required tables are missing. Run "bin/uphptime storage:upgrade" to create them.',
                 previous: $exception,
             );
         }

@@ -341,6 +341,26 @@ JSON is the default backend. To use MySQL or PostgreSQL, set `storage_backend` t
 php bin/uphptime storage:install
 ```
 
+The database records a schema version in `schema_version` (currently `1`). After updating uPHPtime,
+run `storage:upgrade` before anything else: every other command and the API refuse to use a SQL database
+whose schema version differs from the one the release requires, and say so. A failed upgrade step
+leaves the database at the last completed version and exits 1, so it can be fixed and rerun.
+`storage:upgrade` also installs anything missing from the schema (tables, columns and indexes),
+whatever the recorded version, and lists what it added.
+
+```sh
+php bin/uphptime storage:upgrade
+```
+
+`storage:check` changes nothing: it reports the schema version and any missing tables, columns or
+indexes, and exits 1 if the database is not valid.
+
+```sh
+php bin/uphptime storage:check
+```
+
+The Docker image runs `storage:upgrade` on every start and does not start if it fails.
+
 The SQL backend can be exported to or imported from a JSON-layout directory:
 
 ```sh

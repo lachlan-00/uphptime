@@ -62,7 +62,9 @@ final class CommandDescriptions
             'peers:allowlist:remove' => "Remove one pattern from a peer's target allowlist",
             'peers:allowlist:clear' => "Clear a peer's entire target allowlist",
             'peers:reputation:reset' => "Reset a peer's local reputation back to neutral",
-            'storage:install' => 'Create/upgrade the MySQL or PostgreSQL schema (idempotent)',
+            'storage:install' => 'Create the MySQL or PostgreSQL schema and apply pending upgrades (idempotent)',
+            'storage:check' => 'Check the MySQL or PostgreSQL schema version and that every table, column and index exists (read-only)',
+            'storage:upgrade' => 'Upgrade the MySQL or PostgreSQL schema to the required version and install anything missing (required after updating)',
             'storage:export' => "Copy this node's full data to a JSON-layout directory",
             'storage:import' => "Restore this node's full data from a JSON-layout directory",
         ];

@@ -17,4 +17,6 @@
 * `check_due_grace_seconds` (default 30) treats a site as due slightly ahead of its `next_due_at`, so ordinary cron/process-startup jitter never strands it a whole extra interval unchecked.
 * `confirmed_uptime_percent` and `checks_confirmed_down` count only runs of two or more consecutive missed checks as downtime, alongside the raw `uptime_percent`.
 * `check:recheck` CLI command (scheduled every minute) rechecks sites whose last check did not pass and restores recovered ones to up, sharing the `check:run` lock without blocking it.
+* SQL databases record a schema version, `storage:upgrade` applies pending upgrades and installs any missing tables, columns and indexes, and every other command and the API refuse to run against a database that is not at the required version. `storage:install` also applies them; the Docker image runs `storage:upgrade` on start.
+* `storage:check` CLI command reports the SQL schema version and any missing tables, columns or indexes without changing anything.
 * `config:check` CLI command reports any `config/node.json` key missing its value, and `--fix` fills in just those keys with their defaults without touching anything already set.

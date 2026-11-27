@@ -45,10 +45,17 @@ final class CliApplication
 
     private const HELP_ACTIONS = ['', 'help', '--help', '-h'];
 
-    /** @param array<string, CommandInterface> $commands */
+    // Actions that must work against an out-of-date database, since they are how it is fixed.
+    private const SCHEMA_EXEMPT_ACTIONS = ['config:check', 'storage:check', 'storage:install', 'storage:upgrade'];
+
+    /**
+     * @param array<string, CommandInterface> $commands
+     * @param (\Closure(): void)|null        $schemaCheck throws when the database schema is not at the required version
+     */
     public function __construct(
         private readonly array $commands,
         private readonly ConsoleOutputInterface $output,
+        private readonly ?\Closure $schemaCheck = null,
     ) {}
 
     /** @param string[] $argv */
@@ -73,6 +80,10 @@ final class CliApplication
         }
 
         try {
+            if ($this->schemaCheck instanceof \Closure && !in_array($action, self::SCHEMA_EXEMPT_ACTIONS, true)) {
+                ($this->schemaCheck)();
+            }
+
             return $this->commands[$action]->run($args);
         } catch (Throwable $throwable) {
             $this->output->writeErrorLine(json_encode(['error' => $throwable->getMessage()], JSON_THROW_ON_ERROR));
