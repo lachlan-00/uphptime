@@ -40,6 +40,21 @@ use Uphptime\Tests\Support\FakeClock;
 
 final class UptimeReportCalculatorTest extends TestCase
 {
+    public function testConfirmedUptimeIgnoresIsolatedMissesButCountsConsecutiveOnes(): void
+    {
+        $history = new InMemoryHistoryRepository();
+        foreach ([[0, CheckOutcome::Fail], [5, CheckOutcome::Pass], [10, CheckOutcome::Fail], [15, CheckOutcome::Fail], [20, CheckOutcome::Pass]] as [$minute, $outcome]) {
+            $history->append('site-1', $this->record(sprintf('2026-01-02T00:%02d:00+00:00', $minute), $outcome));
+        }
+
+        $calculator = new UptimeReportCalculator($history, new InMemoryRollupRepository(), new FakeClock('2026-01-02T12:00:00+00:00'));
+        $report     = $calculator->forDay('site-1', '2026-01-02');
+
+        self::assertSame(40.0, $report->uptimePercent());
+        self::assertSame(2, $report->toArray()['checks_confirmed_down']);
+        self::assertSame(60.0, $report->confirmedUptimePercent());
+    }
+
     public function testErrorOutcomesCountAgainstUptimeButMaintenanceDoesNot(): void
     {
         $history = new InMemoryHistoryRepository();

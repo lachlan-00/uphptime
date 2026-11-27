@@ -40,7 +40,7 @@ final class PdoRollupRepository implements RollupRepositoryInterface
     private const COLUMNS = [
         'site_id', 'date', 'checks_total', 'checks_pass', 'checks_fail', 'checks_unknown',
         'checks_excluded_maintenance', 'checks_self_sourced', 'checks_peer_sourced', 'uptime_percent',
-        'first_check_at', 'last_check_at', 'closed_at',
+        'first_check_at', 'last_check_at', 'closed_at', 'checks_confirmed_down',
     ];
 
     public function __construct(
@@ -95,6 +95,7 @@ final class PdoRollupRepository implements RollupRepositoryInterface
             $rollup->firstCheckAt instanceof \DateTimeImmutable ? PdoTimestamp::format($rollup->firstCheckAt) : null,
             $rollup->lastCheckAt instanceof \DateTimeImmutable ? PdoTimestamp::format($rollup->lastCheckAt) : null,
             PdoTimestamp::format($rollup->closedAt),
+            $rollup->checksConfirmedDown,
         ]);
     }
 
@@ -115,6 +116,7 @@ final class PdoRollupRepository implements RollupRepositoryInterface
             firstCheckAt: $row['first_check_at'] !== null ? PdoTimestamp::parse((string) $row['first_check_at']) : null,
             lastCheckAt: $row['last_check_at'] !== null ? PdoTimestamp::parse((string) $row['last_check_at']) : null,
             closedAt: PdoTimestamp::parse((string) $row['closed_at']),
+            checksConfirmedDown: (int) ($row['checks_confirmed_down'] ?? 0),
         );
     }
 }

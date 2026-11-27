@@ -742,6 +742,15 @@
                         "nullable": true,
                         "description": "checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing."
                     },
+                    "checks_confirmed_down": {
+                        "type": "integer",
+                        "description": "Checks that were part of two or more consecutive non-passing checks, not recovered by a recheck."
+                    },
+                    "confirmed_uptime_percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Uptime counting only checks_confirmed_down as downtime; isolated missed checks do not reduce it."
+                    },
                     "unknown_percent": {
                         "type": "number",
                         "nullable": true,
@@ -795,6 +804,15 @@
                         "type": "number",
                         "nullable": true,
                         "description": "checks_pass divided by all checks not excluded by maintenance; error outcomes count as not passing."
+                    },
+                    "checks_confirmed_down": {
+                        "type": "integer",
+                        "description": "Checks that were part of two or more consecutive non-passing checks, not recovered by a recheck."
+                    },
+                    "confirmed_uptime_percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Uptime counting only checks_confirmed_down as downtime; isolated missed checks do not reduce it."
                     },
                     "unknown_percent": {
                         "type": "number",

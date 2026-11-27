@@ -28,7 +28,9 @@ use function DI\factory;
 
 use Psr\Container\ContainerInterface;
 use Uphptime\Check\CheckRunner;
+use Uphptime\Check\SiteRechecker;
 use Uphptime\Cli\CliApplication;
+use Uphptime\Cli\Commands\CheckRecheckCommand;
 use Uphptime\Cli\Commands\CheckRunCommand;
 use Uphptime\Cli\Commands\ConfigCheckCommand;
 use Uphptime\Cli\Commands\MaintenanceAddCommand;
@@ -73,6 +75,12 @@ return [
         $c->get(CheckRunner::class),
         new Lockfile($c->get('data.dir') . '/run.lock'),
         $c->get(ConsoleOutputInterface::class),
+        CheckRecheckCommand::MAX_HOLD_SECONDS + 10,
+    )),
+    CheckRecheckCommand::class => factory(static fn(ContainerInterface $c): CheckRecheckCommand => new CheckRecheckCommand(
+        $c->get(SiteRechecker::class),
+        new Lockfile($c->get('data.dir') . '/run.lock'),
+        $c->get(ConsoleOutputInterface::class),
     )),
     CliApplication::class => factory(static fn(ContainerInterface $c): CliApplication => new CliApplication([
         'config:check' => $c->get(ConfigCheckCommand::class),
@@ -88,6 +96,7 @@ return [
         'maintenance:schedule:assign' => $c->get(MaintenanceScheduleAssignCommand::class),
         'maintenance:schedule:unassign' => $c->get(MaintenanceScheduleUnassignCommand::class),
         'check:run' => $c->get(CheckRunCommand::class),
+        'check:recheck' => $c->get(CheckRecheckCommand::class),
         'report' => $c->get(ReportCommand::class),
         'pinger:refresh-cache' => $c->get(PingerRefreshCacheCommand::class),
         'peers:add' => $c->get(PeersAddCommand::class),

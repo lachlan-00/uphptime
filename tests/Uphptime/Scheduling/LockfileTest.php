@@ -32,6 +32,21 @@ final class LockfileTest extends TestCase
 {
     private string $path;
 
+    public function testAcquireWaitsForReleaseWithinTheWaitWindow(): void
+    {
+        $first  = new Lockfile($this->path);
+        $second = new Lockfile($this->path);
+        self::assertTrue($first->acquire());
+
+        $start = microtime(true);
+        self::assertFalse($second->acquire(1), 'a lock still held after the wait window must not be acquired');
+        self::assertGreaterThanOrEqual(0.9, microtime(true) - $start);
+
+        $first->release();
+        self::assertTrue($second->acquire(1));
+        $second->release();
+    }
+
     public function testAnotherProcessHoldingTheLockIsDetected(): void
     {
         $script = sys_get_temp_dir() . '/uphptime-lock-holder-' . bin2hex(random_bytes(4)) . '.php';

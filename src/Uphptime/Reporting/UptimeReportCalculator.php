@@ -42,6 +42,7 @@ final class UptimeReportCalculator
         private readonly HistoryRepositoryInterface $historyRepository,
         private readonly RollupRepositoryInterface $rollupRepository,
         private readonly ClockInterface $clock,
+        private readonly ConfirmedDowntimeCounter $confirmedDowntimeCounter = new ConfirmedDowntimeCounter(),
     ) {}
 
     public function forDay(string $siteId, string $date): UptimeReport
@@ -55,6 +56,24 @@ final class UptimeReportCalculator
         }
 
         return $this->fromRecords($this->historyRepository->readDay($siteId, $date));
+    }
+
+    public function forMonth(string $siteId, string $yearMonth): UptimeReport
+    {
+        $rollups = [];
+        foreach ($this->rollupRepository->datesWithRollup($siteId) as $date) {
+            if (str_starts_with($date, $yearMonth)) {
+                $rollup = $this->rollupRepository->read($siteId, $date);
+                if ($rollup instanceof \Uphptime\History\DailyRollup) {
+                    $rollups[] = $rollup;
+                }
+            }
+        }
+
+        $today   = $this->clock->now()->format('Y-m-d');
+        $records = str_starts_with($today, $yearMonth) ? $this->historyRepository->readDay($siteId, $today) : [];
+
+        return $this->fromRollups($rollups)->merge($this->fromRecords($records));
     }
 
     // Inclusive of both $startDate and $endDate, each a whole calendar day (rollups are already day buckets).
@@ -72,24 +91,6 @@ final class UptimeReportCalculator
 
         $today   = $this->clock->now()->format('Y-m-d');
         $records = ($today >= $startDate && $today <= $endDate) ? $this->historyRepository->readDay($siteId, $today) : [];
-
-        return $this->fromRollups($rollups)->merge($this->fromRecords($records));
-    }
-
-    public function forMonth(string $siteId, string $yearMonth): UptimeReport
-    {
-        $rollups = [];
-        foreach ($this->rollupRepository->datesWithRollup($siteId) as $date) {
-            if (str_starts_with($date, $yearMonth)) {
-                $rollup = $this->rollupRepository->read($siteId, $date);
-                if ($rollup instanceof \Uphptime\History\DailyRollup) {
-                    $rollups[] = $rollup;
-                }
-            }
-        }
-
-        $today   = $this->clock->now()->format('Y-m-d');
-        $records = str_starts_with($today, $yearMonth) ? $this->historyRepository->readDay($siteId, $today) : [];
 
         return $this->fromRollups($rollups)->merge($this->fromRecords($records));
     }
@@ -119,7 +120,9 @@ final class UptimeReportCalculator
         $excluded    = 0;
         $selfSourced = 0;
 
-        // Only the primary outcome counts toward uptime; confirmation/canary/tie-break records are supplementary.
+        $allRecords = $records;
+
+        // Only the primary outcome counts toward uptime; confirmation/canary/recheck/tie-break records are supplementary.
         $records = array_values(array_filter($records, static fn(HistoryRecord $record): bool => $record->role === HistoryRecordRole::Primary));
 
         foreach ($records as $record) {
@@ -138,7 +141,7 @@ final class UptimeReportCalculator
             }
         }
 
-        return new UptimeReport(count($records), $pass, $fail, $unknown, $excluded, $selfSourced);
+        return new UptimeReport(count($records), $pass, $fail, $unknown, $excluded, $selfSourced, $this->confirmedDowntimeCounter->count($allRecords));
     }
 
     /** @param DailyRollup[] $rollups */
@@ -150,6 +153,7 @@ final class UptimeReportCalculator
         $unknown     = 0;
         $excluded    = 0;
         $selfSourced = 0;
+        $confirmed   = 0;
 
         foreach ($rollups as $rollup) {
             $total += $rollup->checksTotal;
@@ -158,8 +162,9 @@ final class UptimeReportCalculator
             $unknown += $rollup->checksUnknown;
             $excluded += $rollup->checksExcludedMaintenance;
             $selfSourced += $rollup->checksSelfSourced;
+            $confirmed += $rollup->checksConfirmedDown;
         }
 
-        return new UptimeReport($total, $pass, $fail, $unknown, $excluded, $selfSourced);
+        return new UptimeReport($total, $pass, $fail, $unknown, $excluded, $selfSourced, $confirmed);
     }
 }

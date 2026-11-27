@@ -65,6 +65,7 @@ final class SiteReportSetBuilder
         if (!in_array($period, ['day', 'month', 'range', 'overall'], true)) {
             return null;
         }
+
         if ($period === 'range' && ($start === null || $end === null || $start > $end)) {
             return null;
         }

@@ -66,11 +66,27 @@ final class SiteReportSetBuilderTest extends TestCase
         self::assertCount(2, $result->items);
     }
 
+    public function testRangePeriodRequiresBothStartAndEndWithStartNotAfterEnd(): void
+    {
+        $sites = new InMemorySiteRepository();
+
+        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-05'));
+        self::assertNull($this->builder($sites)->build('range', null, null, null, null, '2026-01-05'));
+        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-10', '2026-01-05'));
+        self::assertNotNull($this->builder($sites)->build('range', null, null, null, '2026-01-05', '2026-01-10'));
+    }
+
     public function testResolvePeriodInfersDayFromDateAloneAndMonthFromMonthAlone(): void
     {
         self::assertSame('day', SiteReportSetBuilder::resolvePeriod(null, '2026-01-01', null));
         self::assertSame('month', SiteReportSetBuilder::resolvePeriod(null, null, '2026-01'));
         self::assertSame('overall', SiteReportSetBuilder::resolvePeriod(null, null, null));
+    }
+
+    public function testResolvePeriodInfersRangeFromStartOrEndAlone(): void
+    {
+        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, '2026-01-01'));
+        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, null, '2026-01-05'));
     }
 
     public function testResolvePeriodPrefersAnExplicitPeriodOverDateOrMonth(): void
@@ -81,22 +97,6 @@ final class SiteReportSetBuilderTest extends TestCase
     public function testUnknownPeriodReturnsNull(): void
     {
         self::assertNull($this->builder(new InMemorySiteRepository())->build('decade', null, null, null));
-    }
-
-    public function testResolvePeriodInfersRangeFromStartOrEndAlone(): void
-    {
-        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, '2026-01-01', null));
-        self::assertSame('range', SiteReportSetBuilder::resolvePeriod(null, null, null, null, '2026-01-05'));
-    }
-
-    public function testRangePeriodRequiresBothStartAndEndWithStartNotAfterEnd(): void
-    {
-        $sites = new InMemorySiteRepository();
-
-        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-05', null));
-        self::assertNull($this->builder($sites)->build('range', null, null, null, null, '2026-01-05'));
-        self::assertNull($this->builder($sites)->build('range', null, null, null, '2026-01-10', '2026-01-05'));
-        self::assertNotNull($this->builder($sites)->build('range', null, null, null, '2026-01-05', '2026-01-10'));
     }
 
     private function builder(InMemorySiteRepository $sites): SiteReportSetBuilder

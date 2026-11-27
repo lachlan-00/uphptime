@@ -44,6 +44,7 @@ final class RollupBuilder
         private readonly HistoryRepositoryInterface $historyRepository,
         private readonly RollupRepositoryInterface $rollupRepository,
         private readonly ClockInterface $clock,
+        private readonly ConfirmedDowntimeCounter $confirmedDowntimeCounter = new ConfirmedDowntimeCounter(),
     ) {}
 
     // Returns how many day-rollups were newly closed.
@@ -68,9 +69,11 @@ final class RollupBuilder
 
     private function buildRollup(string $siteId, string $date): DailyRollup
     {
-        // Only the primary outcome counts; confirmation/canary/tie-break records are supplementary.
+        $allRecords = $this->historyRepository->readDay($siteId, $date);
+
+        // Only the primary outcome counts; confirmation/canary/recheck/tie-break records are supplementary.
         $records = array_values(array_filter(
-            $this->historyRepository->readDay($siteId, $date),
+            $allRecords,
             static fn(HistoryRecord $record): bool => $record->role === HistoryRecordRole::Primary,
         ));
 
@@ -118,6 +121,7 @@ final class RollupBuilder
             firstCheckAt: $firstCheckAt,
             lastCheckAt: $lastCheckAt,
             closedAt: $this->clock->now(),
+            checksConfirmedDown: $this->confirmedDowntimeCounter->count($allRecords),
         );
     }
 }

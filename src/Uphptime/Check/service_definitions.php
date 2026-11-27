@@ -39,6 +39,7 @@ use Uphptime\Check\Http\HttpKeywordChecker;
 use Uphptime\Check\Icmp\IcmpChecker;
 use Uphptime\Check\Icmp\SystemPingClient;
 use Uphptime\Check\PeerResultAcquirer;
+use Uphptime\Check\SiteRechecker;
 use Uphptime\Check\Tcp\StreamTcpClient;
 use Uphptime\Check\Tcp\TcpChecker;
 use Uphptime\Config\Config;
@@ -98,6 +99,18 @@ return [
         $c->get(PeerResultAcquirer::class),
         $c->get(DownConfirmer::class),
         $c->get(CanarySampler::class),
+    )),
+    SiteRechecker::class => factory(static fn(ContainerInterface $c): SiteRechecker => new SiteRechecker(
+        $c->get(SiteRepositoryInterface::class),
+        $c->get(HistoryRepositoryInterface::class),
+        $c->get(MaintenanceScheduleRepositoryInterface::class),
+        $c->get(SiteStateMachine::class),
+        $c->get(ClockInterface::class),
+        $c->get(Config::class),
+        $c->get('check.self.http_checker'),
+        $c->get('check.self.http_keyword_checker'),
+        $c->get('check.self.tcp_checker'),
+        $c->get('check.self.icmp_checker'),
     )),
     DownConfirmer::class => factory(static function (ContainerInterface $c): DownConfirmer {
         $config = $c->get(Config::class);

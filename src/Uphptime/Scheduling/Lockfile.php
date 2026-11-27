@@ -37,8 +37,8 @@ final class Lockfile
 
     public function __construct(private readonly string $path) {}
 
-    // Returns false immediately if another run already holds the lock, rather than blocking.
-    public function acquire(): bool
+    // Returns false if another run still holds the lock after $waitSeconds (default: immediately), rather than blocking.
+    public function acquire(int $waitSeconds = 0): bool
     {
         $directory = dirname($this->path);
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
@@ -50,10 +50,16 @@ final class Lockfile
             throw new RuntimeException(sprintf('Unable to open lock file: %s', $this->path));
         }
 
-        if (!flock($handle, LOCK_EX | LOCK_NB)) {
-            fclose($handle);
+        $deadline = microtime(true) + $waitSeconds;
 
-            return false;
+        while (!flock($handle, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) >= $deadline) {
+                fclose($handle);
+
+                return false;
+            }
+
+            usleep(200_000);
         }
 
         $this->handle = $handle;

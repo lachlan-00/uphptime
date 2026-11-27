@@ -104,6 +104,11 @@ unchanged but still counts against the uptime percentage. Reports show errors as
 and `error_percent`. HTTP error responses and keyword mismatches count as failures. Only
 maintenance windows are excluded from uptime.
 
+`uptime_percent` is the raw share of checks that passed, so one missed check costs the same as any other.
+`confirmed_uptime_percent` counts as downtime only runs of two or more consecutive missed checks (fails or
+errors, including every check in the run) that no `check:recheck` pass recovered, and `checks_confirmed_down`
+is that count. Use it to tell sustained downtime from a site that merely missed a check.
+
 Maintenance windows exclude checks during the window from uptime reporting:
 
 ```sh
@@ -291,9 +296,12 @@ like a password: share it privately, never in a public post or repository. For D
 ## Scheduling
 
 `check:run` checks due sites and uses an exclusive lock to prevent overlapping runs.
-`pinger:refresh-cache` is optional and refreshes the delegated-check cache. The Docker image
-already runs these jobs every five minutes and every minute respectively; it does not need
-an additional host scheduler.
+`check:recheck` rechecks, from this node, sites whose last check did not pass, so a service that
+answers between scheduled passes is restored to up before the next pass can mark it down. It shares
+`check:run`'s lock, skips itself when a pass is running, and never holds the lock for more than 20 seconds.
+Rechecks never mark a site down and do not count toward uptime. `pinger:refresh-cache` is optional and
+refreshes the delegated-check cache. The Docker image already runs these jobs every five minutes,
+every minute and every minute respectively; it does not need an additional host scheduler.
 
 For a non-Docker installation, choose cron or systemd timers below. Run the jobs as a user
 with read/write access to the configured data directory.
@@ -306,7 +314,8 @@ crontab with `crontab -e`. Remove the cache refresh entry if the node does not n
 
 ### systemd timers
 
-Copy the example [check service](https://github.com/lachlan-00/uphptime/blob/main/docs/examples/uphptime-check.service) and
+Run `check:recheck` every minute the same way as the pinger refresh (a copy of its service and timer with the
+command changed). Copy the example [check service](https://github.com/lachlan-00/uphptime/blob/main/docs/examples/uphptime-check.service) and
 [timer](https://github.com/lachlan-00/uphptime/blob/main/docs/examples/uphptime-check.timer) to `/etc/systemd/system/`. Edit the service's
 `User` and `ExecStart` for your installation. To refresh the pinger cache, also copy the
 [cache service](https://github.com/lachlan-00/uphptime/blob/main/docs/examples/uphptime-pinger-refresh.service) and

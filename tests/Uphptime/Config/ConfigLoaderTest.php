@@ -34,6 +34,15 @@ final class ConfigLoaderTest extends TestCase
 {
     private string $tempFile;
 
+    public function testExplicitCheckDueGraceSecondsOverridesTheDefault(): void
+    {
+        file_put_contents($this->tempFile, json_encode(['check_due_grace_seconds' => 3]));
+
+        $config = (new ConfigLoader())->load($this->tempFile);
+
+        self::assertSame(3, $config->checkDueGraceSeconds);
+    }
+
     public function testExplicitFalseBooleanOverridesTheDefault(): void
     {
         file_put_contents($this->tempFile, json_encode(['pinger_enabled' => false]));
@@ -111,15 +120,6 @@ final class ConfigLoaderTest extends TestCase
         self::assertSame(40.0, $config->peerReputationExclusionThreshold);
         self::assertSame(45.0, $config->peerReputationProbationScore);
         self::assertSame(30, $config->checkDueGraceSeconds);
-    }
-
-    public function testExplicitCheckDueGraceSecondsOverridesTheDefault(): void
-    {
-        file_put_contents($this->tempFile, json_encode(['check_due_grace_seconds' => 3]));
-
-        $config = (new ConfigLoader())->load($this->tempFile);
-
-        self::assertSame(3, $config->checkDueGraceSeconds);
     }
 
     public function testNonArrayTcpPortAllowlistThrows(): void

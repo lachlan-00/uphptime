@@ -42,28 +42,13 @@ final class ConfigCheckCommandTest extends TestCase
         foreach (ConfigKey::cases() as $key) {
             $complete[$key->value] = $key->default();
         }
+
         file_put_contents($this->configPath, json_encode($complete, JSON_THROW_ON_ERROR));
 
         $exit = $this->command()->run([]);
 
         self::assertSame(0, $exit);
         self::assertSame(['path' => $this->configPath, 'status' => 'ok', 'missing' => []], $this->output->lastLineDecoded());
-    }
-
-    public function testMissingKeysWithoutFixReportsThemAndLeavesFileUntouched(): void
-    {
-        file_put_contents($this->configPath, json_encode(['timezone' => 'Australia/Sydney'], JSON_THROW_ON_ERROR));
-
-        $exit = $this->command()->run([]);
-
-        self::assertSame(1, $exit, 'missing keys without --fix is a non-zero, actionable result');
-        $body = $this->output->lastLineDecoded();
-        self::assertSame('missing_keys', $body['status']);
-        self::assertSame(300, $body['missing']['check_interval_seconds']);
-        self::assertArrayNotHasKey('timezone', $body['missing'], 'a key already present is never reported as missing');
-
-        $onDisk = json_decode((string) file_get_contents($this->configPath), true);
-        self::assertSame(['timezone' => 'Australia/Sydney'], $onDisk, '--fix was not passed, so the file must be untouched');
     }
 
     public function testFixAddsMissingKeysWithoutTouchingExistingOnes(): void
@@ -90,18 +75,6 @@ final class ConfigCheckCommandTest extends TestCase
         self::assertSame('ok', $this->output->lastLineDecoded()['status']);
     }
 
-    public function testMissingFileIsTreatedAsEveryKeyMissing(): void
-    {
-        unlink($this->configPath);
-
-        $exit = $this->command()->run([]);
-
-        self::assertSame(1, $exit);
-        $body = $this->output->lastLineDecoded();
-        self::assertSame('missing_keys', $body['status']);
-        self::assertCount(count(ConfigKey::cases()), $body['missing']);
-    }
-
     public function testFixOnAMissingFileCreatesItWithEveryDefault(): void
     {
         unlink($this->configPath);
@@ -125,14 +98,37 @@ final class ConfigCheckCommandTest extends TestCase
         self::assertNotNull($this->output->lastErrorLine());
     }
 
-    private function command(): ConfigCheckCommand
+    public function testMissingFileIsTreatedAsEveryKeyMissing(): void
     {
-        return new ConfigCheckCommand($this->configPath, new AtomicWriter(), $this->output);
+        unlink($this->configPath);
+
+        $exit = $this->command()->run([]);
+
+        self::assertSame(1, $exit);
+        $body = $this->output->lastLineDecoded();
+        self::assertSame('missing_keys', $body['status']);
+        self::assertCount(count(ConfigKey::cases()), $body['missing']);
+    }
+
+    public function testMissingKeysWithoutFixReportsThemAndLeavesFileUntouched(): void
+    {
+        file_put_contents($this->configPath, json_encode(['timezone' => 'Australia/Sydney'], JSON_THROW_ON_ERROR));
+
+        $exit = $this->command()->run([]);
+
+        self::assertSame(1, $exit, 'missing keys without --fix is a non-zero, actionable result');
+        $body = $this->output->lastLineDecoded();
+        self::assertSame('missing_keys', $body['status']);
+        self::assertSame(300, $body['missing']['check_interval_seconds']);
+        self::assertArrayNotHasKey('timezone', $body['missing'], 'a key already present is never reported as missing');
+
+        $onDisk = json_decode((string) file_get_contents($this->configPath), true);
+        self::assertSame(['timezone' => 'Australia/Sydney'], $onDisk, '--fix was not passed, so the file must be untouched');
     }
 
     protected function setUp(): void
     {
-        $this->configPath = tempnam(sys_get_temp_dir(), 'uphptime-config-check-');
+        $this->configPath  = tempnam(sys_get_temp_dir(), 'uphptime-config-check-');
         $this->output      = new FakeConsoleOutput();
     }
 
@@ -140,5 +136,10 @@ final class ConfigCheckCommandTest extends TestCase
     {
         @unlink($this->configPath);
         @unlink($this->configPath . '.lock');
+    }
+
+    private function command(): ConfigCheckCommand
+    {
+        return new ConfigCheckCommand($this->configPath, new AtomicWriter(), $this->output);
     }
 }

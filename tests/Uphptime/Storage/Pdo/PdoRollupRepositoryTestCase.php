@@ -122,6 +122,7 @@ abstract class PdoRollupRepositoryTestCase extends TestCase
             firstCheckAt: new DateTimeImmutable($date . 'T00:00:12+00:00'),
             lastCheckAt: new DateTimeImmutable($date . 'T23:55:03+00:00'),
             closedAt: $closedAt,
+            checksConfirmedDown: 2,
         );
     }
 }

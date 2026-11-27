@@ -76,13 +76,6 @@ final class ReportOverviewActionTest extends TestCase
         self::assertSame(15, $body['overall']['checks_pass']);
     }
 
-    public function testUnrecognizedPeriodIs422(): void
-    {
-        $response = $this->action(new InMemorySiteRepository())->handle($this->requestFor(['period' => 'decade']));
-
-        self::assertSame(422, $response->getStatusCode());
-    }
-
     public function testRangeMergesRollupsAcrossTheRequestedDays(): void
     {
         $sites   = new InMemorySiteRepository();
@@ -105,6 +98,13 @@ final class ReportOverviewActionTest extends TestCase
         $response = $this->action(new InMemorySiteRepository())->handle(
             $this->requestFor(['period' => 'range', 'start' => '2026-01-01']),
         );
+
+        self::assertSame(422, $response->getStatusCode());
+    }
+
+    public function testUnrecognizedPeriodIs422(): void
+    {
+        $response = $this->action(new InMemorySiteRepository())->handle($this->requestFor(['period' => 'decade']));
 
         self::assertSame(422, $response->getStatusCode());
     }

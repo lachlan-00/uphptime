@@ -47,6 +47,7 @@ final class DailyRollup
         public readonly ?DateTimeImmutable $firstCheckAt,
         public readonly ?DateTimeImmutable $lastCheckAt,
         public readonly DateTimeImmutable $closedAt,
+        public readonly int $checksConfirmedDown = 0,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -66,6 +67,7 @@ final class DailyRollup
             firstCheckAt: $data['first_check_at'] !== null ? new DateTimeImmutable((string) $data['first_check_at']) : null,
             lastCheckAt: $data['last_check_at'] !== null ? new DateTimeImmutable((string) $data['last_check_at']) : null,
             closedAt: new DateTimeImmutable((string) $data['closed_at']),
+            checksConfirmedDown: (int) ($data['checks_confirmed_down'] ?? 0),
         );
     }
 
@@ -80,6 +82,7 @@ final class DailyRollup
             'checks_pass' => $this->checksPass,
             'checks_fail' => $this->checksFail,
             'checks_unknown' => $this->checksUnknown,
+            'checks_confirmed_down' => $this->checksConfirmedDown,
             'checks_excluded_maintenance' => $this->checksExcludedMaintenance,
             'checks_self_sourced' => $this->checksSelfSourced,
             'checks_peer_sourced' => $this->checksPeerSourced,

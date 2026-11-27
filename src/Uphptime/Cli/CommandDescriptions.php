@@ -48,6 +48,7 @@ final class CommandDescriptions
             'maintenance:schedule:assign' => 'Assign an existing maintenance schedule to a site',
             'maintenance:schedule:unassign' => 'Un-assign a maintenance schedule from a site',
             'check:run' => 'Run one scheduled check pass (normally invoked by cron)',
+            'check:recheck' => 'Recheck sites whose last check did not pass and restore any that recovered (run every minute by cron)',
             'report' => 'Print a day/month/overall uptime report for one site (--id=/--name=/positional) or a whole --group=',
             'pinger:refresh-cache' => "Proactively refresh this node's delegated-check result cache",
             'peers:add' => 'Add a peer and its first key (admin-to-admin key exchange)',

@@ -38,11 +38,20 @@ final class UptimeReport
         public readonly int $checksUnknown,
         public readonly int $checksExcludedMaintenance,
         public readonly int $checksSelfSourced,
+        public readonly int $checksConfirmedDown = 0,
     ) {}
 
     public static function empty(): self
     {
         return new self(0, 0, 0, 0, 0, 0);
+    }
+
+    // Uptime counting only runs of two or more consecutive non-passes as downtime, so isolated missed checks do not reduce it.
+    public function confirmedUptimePercent(): ?float
+    {
+        $denominator = $this->checksTotal - $this->checksExcludedMaintenance;
+
+        return $denominator > 0 ? round((($denominator - $this->checksConfirmedDown) / $denominator) * 100, 4) : null;
     }
 
     public function merge(self $other): self
@@ -54,6 +63,7 @@ final class UptimeReport
             $this->checksUnknown + $other->checksUnknown,
             $this->checksExcludedMaintenance + $other->checksExcludedMaintenance,
             $this->checksSelfSourced + $other->checksSelfSourced,
+            $this->checksConfirmedDown + $other->checksConfirmedDown,
         );
     }
 
@@ -72,7 +82,9 @@ final class UptimeReport
             'checks_error' => $this->checksUnknown,
             'checks_unknown' => $this->checksUnknown,
             'checks_excluded_maintenance' => $this->checksExcludedMaintenance,
+            'checks_confirmed_down' => $this->checksConfirmedDown,
             'uptime_percent' => $this->uptimePercent(),
+            'confirmed_uptime_percent' => $this->confirmedUptimePercent(),
             'error_percent' => $this->unknownPercent(),
             'unknown_percent' => $this->unknownPercent(),
             'self_sourced_percent' => $this->selfSourcedPercent(),

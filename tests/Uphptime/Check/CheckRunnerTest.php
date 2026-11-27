@@ -67,6 +67,34 @@ use Uphptime\Tests\Support\FakeRandom;
 
 final class CheckRunnerTest extends TestCase
 {
+    public function testASiteBeyondTheGraceWindowIsNotYetDue(): void
+    {
+        $clock = new FakeClock('2026-01-01T00:04:00+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:05:00+00:00')));
+
+        $checker = new FakeChecker([CheckResult::pass()]);
+        $summary = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config())->run();
+
+        self::assertSame(0, $summary->checked);
+        self::assertSame(1, $summary->notDueSites);
+    }
+
+    public function testASiteDueWithinTheGraceWindowIsCheckedRatherThanStrandedAWholeCycle(): void
+    {
+        // The site's next_due_at is 7 seconds in the future - within the default 10s grace, so this
+        // run must still treat it as due rather than waiting a whole interval for cron/startup jitter.
+        $clock = new FakeClock('2026-01-01T00:04:53+00:00');
+        $sites = new InMemorySiteRepository();
+        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:05:00+00:00')));
+
+        $checker = new FakeChecker([CheckResult::pass()]);
+        $summary = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config())->run();
+
+        self::assertSame(1, $summary->checked);
+        self::assertSame(0, $summary->notDueSites);
+    }
+
     public function testBudgetExhaustionLeavesUnreachedSitesUntouched(): void
     {
         $clock = new FakeClock('2026-01-01T00:10:00+00:00');
@@ -96,34 +124,6 @@ final class CheckRunnerTest extends TestCase
         $site = $sites->find('a');
         self::assertNotNull($site);
         self::assertEquals(new DateTimeImmutable('2026-01-01T00:00:00+00:00'), $site->state->nextDueAt, 'an unreached site keeps its old next_due_at');
-    }
-
-    public function testASiteDueWithinTheGraceWindowIsCheckedRatherThanStrandedAWholeCycle(): void
-    {
-        // The site's next_due_at is 7 seconds in the future - within the default 10s grace, so this
-        // run must still treat it as due rather than waiting a whole interval for cron/startup jitter.
-        $clock = new FakeClock('2026-01-01T00:04:53+00:00');
-        $sites = new InMemorySiteRepository();
-        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:05:00+00:00')));
-
-        $checker = new FakeChecker([CheckResult::pass()]);
-        $summary = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config())->run();
-
-        self::assertSame(1, $summary->checked);
-        self::assertSame(0, $summary->notDueSites);
-    }
-
-    public function testASiteBeyondTheGraceWindowIsNotYetDue(): void
-    {
-        $clock = new FakeClock('2026-01-01T00:04:00+00:00');
-        $sites = new InMemorySiteRepository();
-        $sites->save($this->site('a', new DateTimeImmutable('2026-01-01T00:05:00+00:00')));
-
-        $checker = new FakeChecker([CheckResult::pass()]);
-        $summary = $this->buildRunner($sites, new InMemoryHistoryRepository(), $clock, $checker, $this->config())->run();
-
-        self::assertSame(0, $summary->checked);
-        self::assertSame(1, $summary->notDueSites);
     }
 
     public function testCanaryDisagreementUnresolvedWhenNoThirdPeerExistsLeavesSiteStateUntouched(): void

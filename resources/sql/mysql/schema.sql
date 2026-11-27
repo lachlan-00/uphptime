@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS rollups (
     first_check_at DATETIME(6) NULL,
     last_check_at DATETIME(6) NULL,
     closed_at DATETIME(6) NOT NULL,
+    checks_confirmed_down INT NOT NULL DEFAULT 0,
     PRIMARY KEY (site_id, date)
 ) ENGINE=InnoDB;
 

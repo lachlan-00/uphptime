@@ -32,7 +32,7 @@ use Uphptime\Cli\ConsoleOutputInterface;
 use Uphptime\Scheduling\Lockfile;
 
 /**
- * Exits 2 immediately (never blocks) if a previous run still holds the lock.
+ * Exits 2 if a previous run still holds the lock after the configured wait (default none), so runs never queue.
  */
 final class CheckRunCommand implements CommandInterface
 {
@@ -40,11 +40,12 @@ final class CheckRunCommand implements CommandInterface
         private readonly CheckRunner $checkRunner,
         private readonly Lockfile $lockfile,
         private readonly ConsoleOutputInterface $output,
+        private readonly int $lockWaitSeconds = 0,
     ) {}
 
     public function run(array $args): int
     {
-        if (!$this->lockfile->acquire()) {
+        if (!$this->lockfile->acquire($this->lockWaitSeconds)) {
             $snapshot = $this->checkRunner->overlapSnapshot();
 
             $this->output->writeErrorLine(json_encode([

@@ -27,12 +27,13 @@ namespace Uphptime\History;
 
 /**
  * What one history record represents within its check cycle. Only Primary counts toward uptime;
- * the others are supplementary audit trail (confirmation, canary, tie-break).
+ * the others are supplementary audit trail (confirmation, canary, recheck, tie-break).
  */
 enum HistoryRecordRole: string
 {
     case Canary       = 'canary';
     case Confirmation = 'confirmation';
     case Primary      = 'primary';
+    case Recheck      = 'recheck';
     case TieBreak     = 'tie_break';
 }
